@@ -816,6 +816,49 @@
     </div>
   </section>
 
+  <!-- Tab 3: Mạng & QoS -->
+  <section id="net-qos-view" style="display:none; flex-direction:column; gap:12px;">
+    <div class="m3-card">
+      <div class="card-header-row">
+        <div class="dev-profile">
+          <div class="dev-icon-button" style="cursor:default;">⚡</div>
+          <div class="dev-names-wrap" style="cursor:default;">
+            <div class="dev-primary-name">Auto-SQM Chống Lag</div>
+            <div class="dev-secondary-desc" id="sqm-info">Đang tải thông số...</div>
+          </div>
+        </div>
+        <div class="m3-switch-wrap">
+          <label class="m3-switch"><input type="checkbox" id="cb-sqm"><span class="m3-switch-track"></span></label>
+          <span style="font-size:0.6rem; color:var(--md-sys-color-on-surface-variant); font-weight:700;">BẬT</span>
+        </div>
+      </div>
+      <button class="m3-btn-tonal" id="btn-sqm-auto" style="width:100%; padding:12px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-on-primary-container); font-size:0.85rem;">
+        🚀 Tự đo tốc độ & Cài đặt 85%
+      </button>
+    </div>
+
+    <div class="m3-card">
+      <div class="card-header-row">
+        <div class="dev-profile">
+          <div class="dev-icon-button" style="cursor:default;">📡</div>
+          <div class="dev-names-wrap" style="cursor:default;">
+            <div class="dev-primary-name">Repeater Tự Cứu Mạng</div>
+            <div class="dev-secondary-desc">Đang bắt: <strong id="rep-cur-ssid">---</strong></div>
+          </div>
+        </div>
+        <div class="m3-switch-wrap">
+          <label class="m3-switch"><input type="checkbox" id="cb-failover"><span class="m3-switch-track"></span></label>
+          <span style="font-size:0.6rem; color:var(--md-sys-color-on-surface-variant); font-weight:700;">AUTO</span>
+        </div>
+      </div>
+      <div id="rep-saved-list" style="font-size:0.78rem; color:var(--md-sys-color-on-surface-variant);"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="m3-btn-tonal" id="btn-wifi-scan" style="flex:1; padding:10px;">🔍 Quét & Đổi Wi-Fi</button>
+        <button class="m3-btn-tonal" id="btn-wifi-manual" style="padding:10px;">➕ Nhập tay</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Main Devices List -->
   <main>
     <div id="device-list" class="device-grid"></div>
@@ -839,6 +882,10 @@
     <button class="m3-nav-item" id="tab-blacklist">
       <div class="nav-pill">🚫</div>
       <span class="nav-label">Blacklist (<span id="count-blacklist">0</span>)</span>
+    </button>
+    <button class="m3-nav-item" id="tab-net">
+      <div class="nav-pill">🌐</div>
+      <span class="nav-label">Mạng & QoS</span>
     </button>
   </nav>
 
@@ -1602,9 +1649,131 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       };
     }
 
+    // === Mạng & QoS Engine (Lazy-load, không tốn RAM/CPU khi ở tab khác) ===
+    async function loadNetStatus() {
+      try {
+        const r = await fetch(`${API_ENDPOINT}?action=net_status`);
+        const d = await r.json();
+        if (!d.ok) return;
+        document.getElementById('cb-sqm').checked = Boolean(d.sqm_en);
+        document.getElementById('sqm-info').textContent = `Giới hạn: ↓ ${d.sqm_dl} kbps · ↑ ${d.sqm_ul} kbps`;
+        document.getElementById('rep-cur-ssid').textContent = d.ssid || 'Không rõ';
+        document.getElementById('cb-failover').checked = Boolean(d.fo_en);
+        const saved = d.saved || [];
+        document.getElementById('rep-saved-list').innerHTML = saved.length
+          ? 'Mạng dự phòng đã lưu: ' + saved.map(s => `<span class="m3-tag m3-tag-band">${s}</span>`).join(' ')
+          : 'Chưa lưu mạng dự phòng nào.';
+      } catch(e) {}
+    }
+
+    function switchMainTab(tabName) {
+      hapticFeedback();
+      state.currentTab = tabName;
+      document.getElementById('tab-clients').classList.toggle('active', tabName === 'clients');
+      document.getElementById('tab-blacklist').classList.toggle('active', tabName === 'blacklist');
+      document.getElementById('tab-net').classList.toggle('active', tabName === 'net');
+
+      const isNet = tabName === 'net';
+      document.querySelector('section').style.display = isNet ? 'none' : 'block';
+      document.querySelector('main').style.display = isNet ? 'none' : 'block';
+      document.getElementById('fab-add-mac').style.display = isNet ? 'none' : 'flex';
+      document.getElementById('net-qos-view').style.display = isNet ? 'flex' : 'none';
+
+      if (isNet) loadNetStatus();
+      else renderFilteredView();
+    }
+
+    function openWifiConfigDialog(presetSsid = '') {
+      dialog.title.textContent = presetSsid ? `Kết nối: ${presetSsid}` : 'Thêm Wi-Fi Repeater';
+      dialog.desc.textContent = 'Lưu vào danh sách dự phòng và tùy chọn chuyển mạng ngay:';
+      dialog.content.style.display = 'block';
+      dialog.content.innerHTML = `
+        <input id="inp-w-ssid" class="m3-text-field" placeholder="Tên Wi-Fi (SSID)" value="${presetSsid}">
+        <input id="inp-w-pass" type="password" class="m3-text-field" placeholder="Mật khẩu Wi-Fi">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" id="cb-w-now" checked> Chuyển sang bắt mạng này ngay
+        </label>`;
+      dialog.actionCallback = () => {
+        const ssid = document.getElementById('inp-w-ssid').value.trim();
+        const pass = document.getElementById('inp-w-pass').value;
+        const switch_now = document.getElementById('cb-w-now').checked;
+        if (!ssid) return showSnackbar('Chưa nhập tên Wi-Fi');
+        apiPost({ action: 'wifi_save', ssid, pass, switch_now }).then(ok => {
+          if (ok) {
+            showSnackbar(switch_now ? 'Đang chuyển Wi-Fi (chờ ~5s)...' : 'Đã lưu mạng dự phòng');
+            setTimeout(loadNetStatus, 5000);
+          }
+        });
+      };
+      dialog.scrim.classList.remove('hidden');
+    }
+
+    function setupNetControls() {
+      document.getElementById('tab-clients').onclick = () => switchMainTab('clients');
+      document.getElementById('tab-blacklist').onclick = () => switchMainTab('blacklist');
+      document.getElementById('tab-net').onclick = () => switchMainTab('net');
+
+      document.getElementById('cb-sqm').onchange = (e) => {
+        apiPost({ action: 'sqm_toggle', enabled: e.target.checked ? '1' : '0' }).then(ok => {
+          if (!ok) e.target.checked = !e.target.checked;
+        });
+      };
+
+      document.getElementById('btn-sqm-auto').onclick = async () => {
+        const btn = document.getElementById('btn-sqm-auto');
+        btn.disabled = true;
+        btn.textContent = '⏳ Đang đo tốc độ (khoảng 6 giây)...';
+        try {
+          const r = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sqm_auto' })
+          });
+          const d = await r.json();
+          if (d.ok) {
+            showSnackbar(`Đã set SQM: ↓${d.dl} / ↑${d.ul} kbps`);
+            loadNetStatus();
+          } else showSnackbar(d.error || 'Lỗi đo tốc độ');
+        } catch(e) { showSnackbar('Hết thời gian đo mạng'); }
+        btn.disabled = false;
+        btn.textContent = '🚀 Tự đo tốc độ & Cài đặt 85%';
+      };
+
+      document.getElementById('cb-failover').onchange = (e) => {
+        apiPost({ action: 'failover_toggle', enabled: e.target.checked ? '1' : '0' });
+      };
+
+      document.getElementById('btn-wifi-manual').onclick = () => openWifiConfigDialog('');
+
+      document.getElementById('btn-wifi-scan').onclick = async () => {
+        const btn = document.getElementById('btn-wifi-scan');
+        btn.disabled = true; btn.textContent = '⏳ Đang quét sóng...';
+        try {
+          const r = await fetch(`${API_ENDPOINT}?action=wifi_scan`);
+          const d = await r.json();
+          const aps = d.aps || [];
+          if (!aps.length) showSnackbar('Không quét được sóng Wi-Fi nào');
+          else {
+            dialog.title.textContent = 'Chọn Wi-Fi xung quanh';
+            dialog.desc.textContent = 'Bấm vào tên mạng để nhập mật khẩu & lưu:';
+            dialog.content.style.display = 'block';
+            dialog.content.innerHTML = aps.map(a =>
+              `<button class="m3-btn-tonal" style="width:100%;text-align:left;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;" onclick="openWifiConfigDialog('${a.ssid.replace(/'/g,"")}')">
+                <span>📶 ${a.ssid}</span><span>${a.sig} dBm</span>
+              </button>`
+            ).join('');
+            dialog.actionCallback = null;
+            dialog.scrim.classList.remove('hidden');
+          }
+        } catch(e) { showSnackbar('Lỗi quét Wi-Fi'); }
+        btn.disabled = false; btn.textContent = '🔍 Quét & Đổi Wi-Fi';
+      };
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       setupThemeM3();
       setupControls();
+      setupNetControls();
       fetchDeviceData(true);
     });
   </script>

@@ -121,5 +121,6 @@ case "$act" in
     uci -q show dhcp | grep "^dhcp\.[^.]*\.ip='$ip'$" | grep -vq "^dhcp\.$s\." && err "IP da duoc gan cho may khac"
     uci set dhcp.$s=host; uci set dhcp.$s.mac="$mac"; uci set dhcp.$s.ip="$ip"
     uci commit dhcp; /etc/init.d/dnsmasq reload >/dev/null 2>&1; ok;;
+  net_status|sqm_toggle|sqm_auto|wifi_scan|wifi_save|failover_toggle) . /etc/devmgr/net_ext.sh ;;
   *) err "action khong hop le";;
 esac
