@@ -764,7 +764,7 @@
     <div class="bar-row">
       <div class="app-title-group">
         <h1 class="app-title">Quản lý Thiết bị</h1>
-        <span class="m3-badge-pill">CR6608 M3</span>
+        <span class="m3-badge-pill">CR6608 v1.2</span>
       </div>
       <div class="top-actions">
         <button class="btn-m3-icon" id="btn-backup-data" title="Sao lưu / Khôi phục tên & icon">💾</button>
@@ -857,6 +857,18 @@
         <button class="m3-btn-tonal" id="btn-wifi-manual" style="padding:10px;">➕ Nhập tay</button>
       </div>
     </div>
+    <div class="m3-card">
+      <div class="card-header-row">
+        <div class="dev-profile">
+          <div class="dev-icon-button" style="cursor:default;">🧹</div>
+          <div class="dev-names-wrap" style="cursor:default;">
+            <div class="dev-primary-name">Tối ưu Bộ nhớ & Cache</div>
+            <div class="dev-secondary-desc">RAM trống: <strong id="ram-free-info">--- MB</strong></div>
+          </div>
+        </div>
+        <button class="m3-btn-tonal" id="btn-clean-ram" style="padding:8px 12px;">Dọn ngay</button>
+      </div>
+    </div>
   </section>
 
   <!-- Main Devices List -->
@@ -912,8 +924,25 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
      * Xiaomi CR6608 Device Master Engine - Material Design 3 Edition
      * Cung cấp đổi icon, sao lưu, WOL, M3 styling, chống ghi flash và tiết kiệm tài nguyên
      */
-    const DEMO_MODE = false;
-    const API_ENDPOINT = '/cgi-bin/devmgr';
+        const API_ENDPOINT = '/cgi-bin/devmgr';
+    const APP_VER = '1.2';
+    async function checkAutoReload() {
+      try {
+        const r = await fetch(`${API_ENDPOINT}?action=net_status&_t=${Date.now()}`, { cache: 'no-store' });
+        const d = await r.json();
+        if (d.ver && d.ver !== APP_VER && !sessionStorage.getItem('reloaded_' + d.ver)) {
+          sessionStorage.setItem('reloaded_' + d.ver, '1');
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          }
+          location.reload(true);
+        }
+        if (d.free_mb && document.getElementById('ram-free-info')) {
+          document.getElementById('ram-free-info').textContent = `${d.free_mb} MB`;
+        }
+      } catch(e) {}
+    }
 
     // Danh mục Icon M3 phong phú cho thiết bị
     const ICON_COLLECTION = [
@@ -1201,7 +1230,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       dialog.actionCallback = () => {
         const val = input.value.trim();
         if (val !== curName) {
-          apiPost({ action: 'rename', mac, name: val }).then(ok => { if(ok) fetchDeviceData(true); });
+          apiPost({ action: 'rename', mac, name: val }).then(ok => { if(ok) checkAutoReload();
+      fetchDeviceData(true); });
         }
       };
 
@@ -1226,7 +1256,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       dialog.actionCallback = () => {
         const val = input.value.trim().toUpperCase();
         if (/^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/.test(val)) {
-          apiPost({ action: 'blacklist_add', mac: val }).then(ok => { if(ok) fetchDeviceData(true); });
+          apiPost({ action: 'blacklist_add', mac: val }).then(ok => { if(ok) checkAutoReload();
+      fetchDeviceData(true); });
         } else {
           showSnackbar('Địa chỉ MAC không hợp lệ');
         }
@@ -1370,7 +1401,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
           const action = e.target.checked ? 'block' : 'unblock';
           apiPost({ action, mac: d.mac }).then(ok => {
             if (!ok) e.target.checked = !e.target.checked;
-            else fetchDeviceData(true);
+            else checkAutoReload();
+      fetchDeviceData(true);
           });
         };
 
@@ -1380,7 +1412,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         btnKick.onclick = () => {
           const d = card._d, profile = resolveDeviceSmartProfile(d);
           openConfirmDialog('Kick Wi-Fi', `Ngắt kết nối Wi-Fi ngay của "${profile.name}"?`, () => {
-            apiPost({ action: 'kick', mac: d.mac }).then(ok => { if(ok) fetchDeviceData(true); });
+            apiPost({ action: 'kick', mac: d.mac }).then(ok => { if(ok) checkAutoReload();
+      fetchDeviceData(true); });
           });
         };
 
@@ -1392,7 +1425,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
             isBl ? 'Bỏ Blacklist' : 'Đưa vào Blacklist',
             `${isBl ? 'Khôi phục kết nối' : 'Cấm hoàn toàn'} cho thiết bị "${profile.name}"?`,
             () => {
-              apiPost({ action: isBl ? 'blacklist_remove' : 'blacklist_add', mac: d.mac }).then(ok => { if(ok) fetchDeviceData(true); });
+              apiPost({ action: isBl ? 'blacklist_remove' : 'blacklist_add', mac: d.mac }).then(ok => { if(ok) checkAutoReload();
+      fetchDeviceData(true); });
             }
           );
         };
@@ -1588,7 +1622,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        fetchDeviceData(true);
+        checkAutoReload();
+      fetchDeviceData(true);
       } else if (state.pollTimeoutId) {
         clearTimeout(state.pollTimeoutId);
         state.pollTimeoutId = null;
@@ -1635,7 +1670,8 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       document.getElementById('btn-refresh').onclick = () => {
         hapticFeedback();
         showSnackbar('Đang cập nhật danh sách...');
-        fetchDeviceData(true);
+        checkAutoReload();
+      fetchDeviceData(true);
       };
 
       document.getElementById('fab-add-mac').onclick = () => {
@@ -1659,6 +1695,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         document.getElementById('sqm-info').textContent = `Giới hạn: ↓ ${d.sqm_dl} kbps · ↑ ${d.sqm_ul} kbps`;
         document.getElementById('rep-cur-ssid').textContent = d.ssid || 'Không rõ';
         document.getElementById('cb-failover').checked = Boolean(d.fo_en);
+        if (d.free_mb) document.getElementById('ram-free-info').textContent = `${d.free_mb} MB`;
         const saved = d.saved || [];
         document.getElementById('rep-saved-list').innerHTML = saved.length
           ? 'Mạng dự phòng đã lưu: ' + saved.map(s => `<span class="m3-tag m3-tag-band">${s}</span>`).join(' ')
@@ -1744,6 +1781,10 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       };
 
       document.getElementById('btn-wifi-manual').onclick = () => openWifiConfigDialog('');
+      document.getElementById('btn-clean-ram').onclick = async () => {
+        const ok = await apiPost({ action: 'clean_ram', mac: '00:00:00:00:00:00' });
+        if (ok) loadNetStatus();
+      };
 
       document.getElementById('btn-wifi-scan').onclick = async () => {
         const btn = document.getElementById('btn-wifi-scan');
@@ -1774,6 +1815,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       setupThemeM3();
       setupControls();
       setupNetControls();
+      checkAutoReload();
       fetchDeviceData(true);
     });
   </script>

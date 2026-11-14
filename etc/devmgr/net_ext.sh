@@ -8,7 +8,15 @@ case "$act" in
     SSID=$(uci -q get "${IFACE}.ssid" || echo "Chưa kết nối")
     FO_EN=0; [ -f /etc/devmgr/repeater.conf ] && . /etc/devmgr/repeater.conf && FO_EN=${ENABLED:-0}
     SAVED=$(awk -F'|' 'NF>=2{printf "\"%s\",",$1}' /etc/devmgr/wifi_backup.list 2>/dev/null | sed 's/,$//')
-    printf '{"ok":true,"sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' "$SQM_EN" "$SQM_DL" "$SQM_UL" "$SSID" "$FO_EN" "$SAVED"
+    FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
+    printf '{"ok":true,"ver":"1.2","free_mb":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' "$FREE_MB" "$SQM_EN" "$SQM_DL" "$SQM_UL" "$SSID" "$FO_EN" "$SAVED"
+    exit 0 ;;
+
+  clean_ram)
+    rm -f /tmp/*.tmp /tmp/dm_fail /tmp/luci-indexcache* 2>/dev/null
+    sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
+    FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
+    printf '{"ok":true,"free_mb":"%s"}\n' "$FREE_MB"
     exit 0 ;;
 
   sqm_toggle)
@@ -31,6 +39,7 @@ case "$act" in
     uci set sqm.@queue[0].enabled="1"
     uci commit sqm
     /etc/init.d/sqm reload >/dev/null 2>&1
+    sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
     printf '{"ok":true,"dl":%s,"ul":%s}\n' "$DL_K" "$UL_K"
     exit 0 ;;
 
