@@ -1698,7 +1698,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         const pass = document.getElementById('inp-w-pass').value;
         const switch_now = document.getElementById('cb-w-now').checked;
         if (!ssid) return showSnackbar('Chưa nhập tên Wi-Fi');
-        apiPost({ action: 'wifi_save', ssid, pass, switch_now }).then(ok => {
+        apiPost({ action: 'wifi_save', mac: '00:00:00:00:00:00', ssid, pass, switch_now }).then(ok => {
           if (ok) {
             showSnackbar(switch_now ? 'Đang chuyển Wi-Fi (chờ ~5s)...' : 'Đã lưu mạng dự phòng');
             setTimeout(loadNetStatus, 5000);
@@ -1714,7 +1714,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       document.getElementById('tab-net').onclick = () => switchMainTab('net');
 
       document.getElementById('cb-sqm').onchange = (e) => {
-        apiPost({ action: 'sqm_toggle', enabled: e.target.checked ? '1' : '0' }).then(ok => {
+        apiPost({ action: 'sqm_toggle', mac: '00:00:00:00:00:00', enabled: e.target.checked ? '1' : '0' }).then(ok => {
           if (!ok) e.target.checked = !e.target.checked;
         });
       };
@@ -1727,7 +1727,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
           const r = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'sqm_auto' })
+            body: JSON.stringify({ action: 'sqm_auto', mac: '00:00:00:00:00:00' })
           });
           const d = await r.json();
           if (d.ok) {
@@ -1740,7 +1740,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       };
 
       document.getElementById('cb-failover').onchange = (e) => {
-        apiPost({ action: 'failover_toggle', enabled: e.target.checked ? '1' : '0' });
+        apiPost({ action: 'failover_toggle', mac: '00:00:00:00:00:00', enabled: e.target.checked ? '1' : '0' });
       };
 
       document.getElementById('btn-wifi-manual').onclick = () => openWifiConfigDialog('');
