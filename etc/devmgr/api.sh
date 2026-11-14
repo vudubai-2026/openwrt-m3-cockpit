@@ -69,7 +69,11 @@ fi
 printf 'Content-Type: application/json\r\nCache-Control: no-store\r\n\r\n'
 
 if [ "$REQUEST_METHOD" != "POST" ]; then
-  case "$QUERY_STRING" in *action=list*) list; exit 0;; esac
+  case "$QUERY_STRING" in
+    *action=list*) list; exit 0;;
+    *action=net_status*) act=net_status; . /etc/devmgr/net_ext.sh;;
+    *action=wifi_scan*) act=wifi_scan; . /etc/devmgr/net_ext.sh;;
+  esac
   err "bad request"
 fi
 
