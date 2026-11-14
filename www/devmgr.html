@@ -764,7 +764,7 @@
     <div class="bar-row">
       <div class="app-title-group">
         <h1 class="app-title">Quản lý Thiết bị</h1>
-        <span class="m3-badge-pill">CR6608 v2.0</span>
+        <span class="m3-badge-pill">CR6608 v2.2</span>
       </div>
       <div class="top-actions">
         <button class="btn-m3-icon" id="btn-backup-data" title="Sao lưu / Khôi phục tên & icon">💾</button>
@@ -925,7 +925,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
      * Cung cấp đổi icon, sao lưu, WOL, M3 styling, chống ghi flash và tiết kiệm tài nguyên
      */
         const API_ENDPOINT = '/cgi-bin/devmgr';
-    const APP_VER = '2.0';
+    const APP_VER = '2.2';
     const NET_API = '/cgi-bin/devmgr-net';
     async function checkAutoReload() {
       try {
@@ -1789,7 +1789,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         const btn = document.getElementById('btn-sqm-auto');
         btn.disabled = true;
         btn.textContent = '⏳ Đang đo tốc độ thực tế (~6s)...';
-        const res = await netPost({ action: 'sqm_auto' }, 15000);
+        const res = await netPost({ action: 'sqm_auto' }, 18000);
         if (res) {
           showSnackbar(`Đã gắn SQM (${res.iface || "5GHz"}): ↓${res.dl} / ↑${res.ul} kbps`);
           loadNetStatus();

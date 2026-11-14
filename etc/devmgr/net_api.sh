@@ -14,7 +14,6 @@ get_sta_iface() {
   uci show wireless 2>/dev/null | sed -n "s/^\(wireless\.[^.]*\)\.mode=.sta./\1/p" | head -1
 }
 
-# Tìm interface phát 5GHz (AP trên radio1 hoặc phy1-ap0)
 get_5g_ap_dev() {
   for i in $(iw dev | awk '$1=="Interface"{print $2}'); do
     fq=$(iw dev "$i" info 2>/dev/null | awk '$1=="channel"{gsub(/[(]/,"");print $3}')
@@ -26,10 +25,33 @@ get_5g_ap_dev() {
   echo "phy1-ap0"
 }
 
+measure_dl_kbps() {
+  # Thử nguồn 1: Cloudflare HTTPS (-k bỏ qua lỗi thiếu ca-bundle trên OpenWrt)
+  for url in \
+    "https://speed.cloudflare.com/__down?bytes=15000000" \
+    "http://proof.ovh.net/files/10Mb.dat" \
+    "http://speedtest.tele2.net/10MB.zip"\; do
+    res=$(curl -k -L -s -o /dev/null -w '%{speed_download}' --connect-timeout 3 --max-time 5 "$url" 2>/dev/null | cut -d. -f1)
+    if [ -n "$res" ] && [ "$res" -gt 100000 ]; then
+      echo $(( (res * 8 * 85) / 100000 ))
+      return 0
+    fi
+  done
+  echo 0
+}
+
+measure_ul_kbps() {
+  res=$(dd if=/dev/zero bs=512K count=6 2>/dev/null | curl -k -s -o /dev/null -w '%{speed_upload}' --connect-timeout 3 --max-time 5 -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null | cut -d. -f1)
+  if [ -n "$res" ] && [ "$res" -gt 50000 ]; then
+    echo $(( (res * 8 * 85) / 100000 ))
+    return 0
+  fi
+  echo 0
+}
+
 case "$act" in
   status)
     SQM_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
-    # Trên AP interface: upload của SQM = Download thực của client, download của SQM = Upload thực của client
     SQM_DL=$(uci -q get sqm.@queue[0].upload || echo 0)
     SQM_UL=$(uci -q get sqm.@queue[0].download || echo 0)
     IFACE=$(get_sta_iface)
@@ -38,7 +60,7 @@ case "$act" in
     SAVED=$(awk -F'|' 'NF>=2{gsub(/"/,"",$1); printf "\"%s\",",$1}' /etc/devmgr/wifi_backup.list 2>/dev/null | sed 's/,$//')
     FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
     PING_MS=$(ping -c 1 -W 1 1.1.1.1 2>/dev/null | sed -n 's/.*time=\([0-9.]*\).*/\1/p' | head -1)
-    printf '{"ok":true,"ver":"2.1","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
+    printf '{"ok":true,"ver":"2.2","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
       "$FREE_MB" "${PING_MS:-timeout}" "$SQM_EN" "$SQM_DL" "$SQM_UL" "$SSID" "$FO_EN" "$SAVED"
     exit 0 ;;
 
@@ -66,19 +88,23 @@ case "$act" in
   sqm_auto)
     [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
     command -v curl >/dev/null 2>&1 || err "Thiếu gói curl (chạy: apk add curl)"
-    # Chỉ đo khi SQM đang tắt (nếu đang bật thì báo tắt trước hoặc tạm dừng hoàn toàn)
-    CUR_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
-    [ "$CUR_EN" = "1" ] && err "Hãy tắt công tắc SQM trước khi đo tốc độ gốc!"
 
-    DL_BPS=$(curl -s -o /dev/null -w '%{speed_download}' --max-time 4 "https://speed.cloudflare.com/__down?bytes=15000000" 2>/dev/null | cut -d. -f1)
-    UL_BPS=$(dd if=/dev/zero bs=1M count=4 2>/dev/null | curl -s -o /dev/null -w '%{speed_upload}' --max-time 4 -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null | cut -d. -f1)
-    [ -z "$DL_BPS" ] || [ "$DL_BPS" -lt 100000 ] && err "Không đo được mạng Internet"
+    # Tự tạm dừng SQM trong lúc đo để lấy đúng tốc độ gốc 100%
+    WAS_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
+    if [ "$WAS_EN" = "1" ]; then
+      /etc/init.d/sqm stop >/dev/null 2>&1
+    fi
 
-    DL_K=$(( (DL_BPS * 8 * 85) / 100000 ))
-    UL_K=$(( (${UL_BPS:-$((DL_BPS/2))} * 8 * 85) / 100000 ))
+    DL_K=$(measure_dl_kbps)
+    if [ "$DL_K" -lt 1000 ]; then
+      [ "$WAS_EN" = "1" ] && /etc/init.d/sqm start >/dev/null 2>&1
+      err "Không đo được tốc độ (kiểm tra kết nối Internet)"
+    fi
+
+    UL_K=$(measure_ul_kbps)
     [ "$UL_K" -lt 1000 ] && UL_K=$((DL_K / 2))
 
-    # Gắn tự động vào interface phát 5GHz (phy1-ap0) và đảo chiều ingress/egress chuẩn cho AP
+    # Gắn thẳng vào interface phát 5GHz (phy1-ap0)
     AP5=$(get_5g_ap_dev)
     uci set sqm.@queue[0].interface="$AP5"
     uci set sqm.@queue[0].qdisc='fq_codel'
@@ -87,7 +113,7 @@ case "$act" in
     uci set sqm.@queue[0].download="$UL_K"
     uci set sqm.@queue[0].enabled="1"
     uci commit sqm
-    /etc/init.d/sqm reload >/dev/null 2>&1
+    /etc/init.d/sqm restart >/dev/null 2>&1
     sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
     printf '{"ok":true,"dl":%s,"ul":%s,"iface":"%s"}\n' "$DL_K" "$UL_K" "$AP5"
     exit 0 ;;
