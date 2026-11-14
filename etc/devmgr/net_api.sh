@@ -26,26 +26,14 @@ get_5g_ap_dev() {
 }
 
 measure_dl_kbps() {
-  # Thử nguồn 1: Cloudflare HTTPS (-k bỏ qua lỗi thiếu ca-bundle trên OpenWrt)
-  for url in \
-    "https://speed.cloudflare.com/__down?bytes=15000000" \
-    "http://proof.ovh.net/files/10Mb.dat" \
-    "http://speedtest.tele2.net/10MB.zip"\; do
-    res=$(curl -k -L -s -o /dev/null -w '%{speed_download}' --connect-timeout 3 --max-time 5 "$url" 2>/dev/null | cut -d. -f1)
+  URLS="https://speed.cloudflare.com/__down?bytes=15000000 http://proof.ovh.net/files/10Mb.dat http://speedtest.tele2.net/10MB.zip"
+  for url in $URLS; do
+    res=$(curl -k -L -s -o /dev/null -w '%{speed_download}' --connect-timeout 3 --max-time 4 "$url" 2>/dev/null | cut -d. -f1)
     if [ -n "$res" ] && [ "$res" -gt 100000 ]; then
       echo $(( (res * 8 * 85) / 100000 ))
       return 0
     fi
   done
-  echo 0
-}
-
-measure_ul_kbps() {
-  res=$(dd if=/dev/zero bs=512K count=6 2>/dev/null | curl -k -s -o /dev/null -w '%{speed_upload}' --connect-timeout 3 --max-time 5 -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null | cut -d. -f1)
-  if [ -n "$res" ] && [ "$res" -gt 50000 ]; then
-    echo $(( (res * 8 * 85) / 100000 ))
-    return 0
-  fi
   echo 0
 }
 
@@ -89,11 +77,8 @@ case "$act" in
     [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
     command -v curl >/dev/null 2>&1 || err "Thiếu gói curl (chạy: apk add curl)"
 
-    # Tự tạm dừng SQM trong lúc đo để lấy đúng tốc độ gốc 100%
     WAS_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
-    if [ "$WAS_EN" = "1" ]; then
-      /etc/init.d/sqm stop >/dev/null 2>&1
-    fi
+    [ "$WAS_EN" = "1" ] && /etc/init.d/sqm stop >/dev/null 2>&1
 
     DL_K=$(measure_dl_kbps)
     if [ "$DL_K" -lt 1000 ]; then
@@ -101,10 +86,8 @@ case "$act" in
       err "Không đo được tốc độ (kiểm tra kết nối Internet)"
     fi
 
-    UL_K=$(measure_ul_kbps)
-    [ "$UL_K" -lt 1000 ] && UL_K=$((DL_K / 2))
+    UL_K=$((DL_K / 2))
 
-    # Gắn thẳng vào interface phát 5GHz (phy1-ap0)
     AP5=$(get_5g_ap_dev)
     uci set sqm.@queue[0].interface="$AP5"
     uci set sqm.@queue[0].qdisc='fq_codel'
