@@ -14,22 +14,31 @@ get_sta_iface() {
   uci show wireless 2>/dev/null | sed -n "s/^\(wireless\.[^.]*\)\.mode=.sta./\1/p" | head -1
 }
 
-get_wan_dev() {
-  ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -1
+# Tìm interface phát 5GHz (AP trên radio1 hoặc phy1-ap0)
+get_5g_ap_dev() {
+  for i in $(iw dev | awk '$1=="Interface"{print $2}'); do
+    fq=$(iw dev "$i" info 2>/dev/null | awk '$1=="channel"{gsub(/[(]/,"");print $3}')
+    if [ -n "$fq" ] && [ "$fq" -gt 4000 ] && iw dev "$i" info 2>/dev/null | grep -q "type AP"; then
+      echo "$i"
+      return
+    fi
+  done
+  echo "phy1-ap0"
 }
 
 case "$act" in
   status)
     SQM_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
-    SQM_DL=$(uci -q get sqm.@queue[0].download || echo 0)
-    SQM_UL=$(uci -q get sqm.@queue[0].upload || echo 0)
+    # Trên AP interface: upload của SQM = Download thực của client, download của SQM = Upload thực của client
+    SQM_DL=$(uci -q get sqm.@queue[0].upload || echo 0)
+    SQM_UL=$(uci -q get sqm.@queue[0].download || echo 0)
     IFACE=$(get_sta_iface)
     SSID=$(uci -q get "${IFACE}.ssid" || echo "Chưa kết nối")
     FO_EN=0; [ -f /etc/devmgr/repeater.conf ] && . /etc/devmgr/repeater.conf && FO_EN=${ENABLED:-0}
     SAVED=$(awk -F'|' 'NF>=2{gsub(/"/,"",$1); printf "\"%s\",",$1}' /etc/devmgr/wifi_backup.list 2>/dev/null | sed 's/,$//')
     FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
     PING_MS=$(ping -c 1 -W 1 1.1.1.1 2>/dev/null | sed -n 's/.*time=\([0-9.]*\).*/\1/p' | head -1)
-    printf '{"ok":true,"ver":"2.0","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
+    printf '{"ok":true,"ver":"2.1","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
       "$FREE_MB" "${PING_MS:-timeout}" "$SQM_EN" "$SQM_DL" "$SQM_UL" "$SSID" "$FO_EN" "$SAVED"
     exit 0 ;;
 
@@ -43,6 +52,12 @@ case "$act" in
   sqm_toggle)
     [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
     EN=$(jsonfilter -s "$body" -e '@.enabled')
+    if [ "$EN" = "1" ]; then
+      AP5=$(get_5g_ap_dev)
+      uci set sqm.@queue[0].interface="$AP5"
+      uci set sqm.@queue[0].qdisc='fq_codel'
+      uci set sqm.@queue[0].script='simple.qos'
+    fi
     uci set sqm.@queue[0].enabled="$EN"
     uci commit sqm
     /etc/init.d/sqm reload >/dev/null 2>&1
@@ -51,21 +66,30 @@ case "$act" in
   sqm_auto)
     [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
     command -v curl >/dev/null 2>&1 || err "Thiếu gói curl (chạy: apk add curl)"
-    DL_BPS=$(curl -s -o /dev/null -w '%{speed_download}' --max-time 4 "https://speed.cloudflare.com/__down?bytes=8000000" 2>/dev/null | cut -d. -f1)
-    UL_BPS=$(dd if=/dev/zero bs=1M count=3 2>/dev/null | curl -s -o /dev/null -w '%{speed_upload}' --max-time 4 -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null | cut -d. -f1)
+    # Chỉ đo khi SQM đang tắt (nếu đang bật thì báo tắt trước hoặc tạm dừng hoàn toàn)
+    CUR_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
+    [ "$CUR_EN" = "1" ] && err "Hãy tắt công tắc SQM trước khi đo tốc độ gốc!"
+
+    DL_BPS=$(curl -s -o /dev/null -w '%{speed_download}' --max-time 4 "https://speed.cloudflare.com/__down?bytes=15000000" 2>/dev/null | cut -d. -f1)
+    UL_BPS=$(dd if=/dev/zero bs=1M count=4 2>/dev/null | curl -s -o /dev/null -w '%{speed_upload}' --max-time 4 -X POST --data-binary @- "https://speed.cloudflare.com/__up" 2>/dev/null | cut -d. -f1)
     [ -z "$DL_BPS" ] || [ "$DL_BPS" -lt 100000 ] && err "Không đo được mạng Internet"
+
     DL_K=$(( (DL_BPS * 8 * 85) / 100000 ))
     UL_K=$(( (${UL_BPS:-$((DL_BPS/2))} * 8 * 85) / 100000 ))
     [ "$UL_K" -lt 1000 ] && UL_K=$((DL_K / 2))
-    WDEV=$(get_wan_dev)
-    [ -n "$WDEV" ] && uci set sqm.@queue[0].interface="$WDEV"
-    uci set sqm.@queue[0].download="$DL_K"
-    uci set sqm.@queue[0].upload="$UL_K"
+
+    # Gắn tự động vào interface phát 5GHz (phy1-ap0) và đảo chiều ingress/egress chuẩn cho AP
+    AP5=$(get_5g_ap_dev)
+    uci set sqm.@queue[0].interface="$AP5"
+    uci set sqm.@queue[0].qdisc='fq_codel'
+    uci set sqm.@queue[0].script='simple.qos'
+    uci set sqm.@queue[0].upload="$DL_K"
+    uci set sqm.@queue[0].download="$UL_K"
     uci set sqm.@queue[0].enabled="1"
     uci commit sqm
     /etc/init.d/sqm reload >/dev/null 2>&1
     sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
-    printf '{"ok":true,"dl":%s,"ul":%s}\n' "$DL_K" "$UL_K"
+    printf '{"ok":true,"dl":%s,"ul":%s,"iface":"%s"}\n' "$DL_K" "$UL_K" "$AP5"
     exit 0 ;;
 
   wifi_scan)

@@ -1791,7 +1791,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         btn.textContent = '⏳ Đang đo tốc độ thực tế (~6s)...';
         const res = await netPost({ action: 'sqm_auto' }, 15000);
         if (res) {
-          showSnackbar(`Đã set SQM: ↓${res.dl} / ↑${res.ul} kbps`);
+          showSnackbar(`Đã gắn SQM (${res.iface || "5GHz"}): ↓${res.dl} / ↑${res.ul} kbps`);
           loadNetStatus();
         }
         btn.disabled = false;
