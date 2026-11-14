@@ -1,0 +1,10 @@
+#!/bin/sh
+body=$(head -c "${CONTENT_LENGTH:-0}")
+pw=$(jsonfilter -s "$body" -e '@.password' | sed 's/\\/\\\\/g; s/"/\\"/g')
+sid=$(ubus call session login "{\"username\":\"root\",\"password\":\"$pw\",\"timeout\":86400}" 2>/dev/null | jsonfilter -e '@.ubus_rpc_session')
+if [ -n "$sid" ]; then
+  printf 'Content-Type: application/json\r\nSet-Cookie: dmsid=%s; Max-Age=86400; Path=/; HttpOnly; SameSite=Strict\r\n\r\n{"ok":true}\n' "$sid"
+else
+  sleep 1
+  printf 'Status: 401 Unauthorized\r\nContent-Type: application/json\r\n\r\n{"ok":false}\n'
+fi

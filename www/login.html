@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng nhập</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F5F7FB;font-family:system-ui,sans-serif;color:#191C20}
+form{background:#fff;padding:28px;border-radius:28px;width:min(340px,86vw);display:grid;gap:16px;box-shadow:0 2px 12px #0002}
+input,button{font:inherit;padding:14px 16px;border-radius:14px;border:1px solid #C3C7D0}
+button{background:#005AC1;color:#fff;border:0;font-weight:600}
+#e{color:#BA1A1A;min-height:1.2em;margin:0}
+@media(prefers-color-scheme:dark){body{background:#111418;color:#E2E2E9}form{background:#1D2024}input{background:#111418;color:inherit;border-color:#43474E}}
+</style></head><body>
+<form id="f"><h2 style="margin:0">Quản lý thiết bị</h2>
+<input id="p" type="password" name="password" autocomplete="current-password" placeholder="Mật khẩu root" required>
+<button>Đăng nhập (nhớ 1 ngày)</button><p id="e"></p></form>
+<script>
+f.onsubmit=async e=>{e.preventDefault();e_.textContent='';
+try{const r=await fetch('/cgi-bin/devmgr-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p.value})});
+if(r.ok)location.replace('/devmgr.html');else e_.textContent='Sai mật khẩu'}catch(x){e_.textContent='Lỗi kết nối'}};
+const e_=document.getElementById('e');
+</script></body></html>

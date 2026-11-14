@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CR6608 Device Manager - Material You</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    /* ==========================================================================
+       Material Design 3 (Material You) Design Tokens & Tonal Palette
+       ========================================================================== */
+    :root {
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --m3-shape-xs: 4px;
+      --m3-shape-sm: 8px;
+      --m3-shape-md: 12px;
+      --m3-shape-lg: 16px;
+      --m3-shape-xl: 28px;
+      --m3-shape-full: 9999px;
+      --m3-motion-duration: 0.2s;
+      --m3-motion-easing: cubic-bezier(0.2, 0, 0, 1);
+
+      /* MD3 Light Scheme */
+      --md-sys-color-primary: #0061A4;
+      --md-sys-color-on-primary: #FFFFFF;
+      --md-sys-color-primary-container: #D1E4FF;
+      --md-sys-color-on-primary-container: #001D36;
+      --md-sys-color-secondary: #535F70;
+      --md-sys-color-on-secondary: #FFFFFF;
+      --md-sys-color-secondary-container: #D7E3F7;
+      --md-sys-color-on-secondary-container: #101C2B;
+      --md-sys-color-tertiary: #6B5778;
+      --md-sys-color-tertiary-container: #F2DAFF;
+      --md-sys-color-on-tertiary-container: #251431;
+      --md-sys-color-error: #BA1A1A;
+      --md-sys-color-error-container: #FFDAD6;
+      --md-sys-color-on-error: #FFFFFF;
+      --md-sys-color-on-error-container: #410002;
+      --md-sys-color-background: #F8F9FF;
+      --md-sys-color-on-background: #191C20;
+      --md-sys-color-surface: #F8F9FF;
+      --md-sys-color-on-surface: #191C20;
+      --md-sys-color-surface-variant: #DFE2EB;
+      --md-sys-color-on-surface-variant: #43474E;
+      --md-sys-color-outline: #73777F;
+      --md-sys-color-outline-variant: #C3C7D0;
+      --md-sys-color-surface-container-lowest: #FFFFFF;
+      --md-sys-color-surface-container-low: #F2F3FA;
+      --md-sys-color-surface-container: #ECEEF4;
+      --md-sys-color-surface-container-high: #E6E8EE;
+      --md-sys-color-surface-container-highest: #E0E2E8;
+      --md-sys-color-success: #198754;
+      --md-sys-color-success-container: #D1E7DD;
+      --md-sys-color-on-success-container: #0F5132;
+      --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.08), 0 1px 2px 0 rgba(0,0,0,0.12);
+      --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.14);
+      --md-elevation-3: 0 4px 8px 3px rgba(0,0,0,0.12), 0 1px 3px 0 rgba(0,0,0,0.15);
+    }
+
+    [data-theme="dark"] {
+      /* MD3 Dark Scheme */
+      --md-sys-color-primary: #9ECAFF;
+      --md-sys-color-on-primary: #003258;
+      --md-sys-color-primary-container: #00497D;
+      --md-sys-color-on-primary-container: #D1E4FF;
+      --md-sys-color-secondary: #BBC7DB;
+      --md-sys-color-on-secondary: #253140;
+      --md-sys-color-secondary-container: #3B4858;
+      --md-sys-color-on-secondary-container: #D7E3F7;
+      --md-sys-color-tertiary: #D7BDE4;
+      --md-sys-color-tertiary-container: #523F5F;
+      --md-sys-color-on-tertiary-container: #F2DAFF;
+      --md-sys-color-error: #FFB4AB;
+      --md-sys-color-error-container: #93000A;
+      --md-sys-color-on-error: #690005;
+      --md-sys-color-on-error-container: #FFDAD6;
+      --md-sys-color-background: #111318;
+      --md-sys-color-on-background: #E2E2E9;
+      --md-sys-color-surface: #111318;
+      --md-sys-color-on-surface: #E2E2E9;
+      --md-sys-color-surface-variant: #43474E;
+      --md-sys-color-on-surface-variant: #C3C7D0;
+      --md-sys-color-outline: #8D9199;
+      --md-sys-color-outline-variant: #43474E;
+      --md-sys-color-surface-container-lowest: #0C0E13;
+      --md-sys-color-surface-container-low: #191C20;
+      --md-sys-color-surface-container: #1D2024;
+      --md-sys-color-surface-container-high: #282A2F;
+      --md-sys-color-surface-container-highest: #33353A;
+      --md-sys-color-success: #75B798;
+      --md-sys-color-success-container: #0F5132;
+      --md-sys-color-on-success-container: #D1E7DD;
+      --md-elevation-1: 0 1px 3px 1px rgba(0,0,0,0.3);
+      --md-elevation-2: 0 2px 6px 2px rgba(0,0,0,0.4);
+      --md-elevation-3: 0 4px 10px 4px rgba(0,0,0,0.5);
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-background);
+      line-height: 1.4;
+      padding: 12px 16px 110px 16px;
+      max-width: 860px;
+      margin: 0 auto;
+      transition: background-color var(--m3-motion-duration) var(--m3-motion-easing);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    /* M3 Top App Bar */
+    .top-app-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 6px 0 12px 0;
+      position: sticky;
+      top: 0;
+      background: var(--md-sys-color-background);
+      z-index: 40;
+    }
+    .bar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .app-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--md-sys-color-on-surface);
+    }
+    .m3-badge-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      padding: 3px 10px;
+      border-radius: var(--m3-shape-full);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-m3-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--m3-shape-full);
+      border: none;
+      background: var(--md-sys-color-surface-container);
+      color: var(--md-sys-color-on-surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background var(--m3-motion-duration), transform 0.1s;
+    }
+    .btn-m3-icon:active {
+      transform: scale(0.92);
+      background: var(--md-sys-color-surface-container-highest);
+    }
+
+    /* Bảng trạng thái mạng M3 (Surface Container Low Card) */
+    .traffic-overview-card {
+      background: var(--md-sys-color-surface-container-low);
+      border-radius: var(--m3-shape-lg);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .traffic-stat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .stat-indicator.rx { background: var(--md-sys-color-primary); }
+    .stat-indicator.tx { background: var(--md-sys-color-success); }
+    .stat-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .stat-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .stat-val {
+      font-size: 0.96rem;
+      font-weight: 800;
+      font-family: monospace;
+    }
+    .stat-val.rx { color: var(--md-sys-color-primary); }
+    .stat-val.tx { color: var(--md-sys-color-success); }
+
+    /* M3 Search Bar */
+    .m3-search-bar {
+      background: var(--md-sys-color-surface-container-high);
+      border-radius: var(--m3-shape-full);
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      margin-bottom: 12px;
+      transition: background var(--m3-motion-duration);
+    }
+    .m3-search-bar:focus-within {
+      background: var(--md-sys-color-surface-container-highest);
+    }
+    .m3-search-bar input {
+      border: none;
+      background: transparent;
+      outline: none;
+      width: 100%;
+      margin-left: 10px;
+      font-size: 0.92rem;
+      color: var(--md-sys-color-on-surface);
+    }
+    .m3-search-bar input::placeholder {
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /* M3 Filter Chips */
+    .chips-carousel {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-bottom: 14px;
+      padding-bottom: 2px;
+    }
+    .chips-carousel::-webkit-scrollbar { display: none; }
+    .m3-chip {
+      height: 34px;
+      padding: 0 14px;
+      border-radius: var(--m3-shape-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface-variant);
+      transition: all var(--m3-motion-duration) var(--m3-motion-easing);
+    }
+    .m3-chip.active {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+      border-color: transparent;
+      font-weight: 700;
+    }
+
+    /* Device Card Grid */
+    .device-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 640px) {
+      .device-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Material 3 Elevated Device Card */
+    .m3-card {
+      background: var(--md-sys-color-surface-container-low);
+      border-radius: var(--m3-shape-lg);
+      padding: 16px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      box-shadow: var(--md-elevation-1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      transition: box-shadow var(--m3-motion-duration), opacity var(--m3-motion-duration);
+    }
+    .m3-card.offline {
+      opacity: 0.55;
+      background: var(--md-sys-color-surface-container-lowest);
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .dev-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+    .dev-icon-button {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--m3-shape-md);
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: transform 0.15s;
+    }
+    .dev-icon-button:active {
+      transform: scale(0.9);
+    }
+    .dev-icon-button .icon-edit-badge {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      font-size: 0.6rem;
+      background: var(--md-sys-color-surface-container-highest);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .dev-names-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      cursor: pointer;
+    }
+    .dev-primary-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dev-primary-name .edit-pen {
+      font-size: 0.75rem;
+      opacity: 0.45;
+    }
+    .dev-secondary-desc {
+      font-size: 0.74rem;
+      color: var(--md-sys-color-on-surface-variant);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* MD3 Switch Component */
+    .m3-switch-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .m3-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 30px;
+    }
+    .m3-switch input { opacity: 0; width: 0; height: 0; }
+    .m3-switch-track {
+      position: absolute;
+      inset: 0;
+      background-color: var(--md-sys-color-surface-container-highest);
+      border: 2px solid var(--md-sys-color-outline);
+      border-radius: var(--m3-shape-full);
+      cursor: pointer;
+      transition: all var(--m3-motion-duration) var(--m3-motion-easing);
+    }
+    .m3-switch-track::before {
+      content: "";
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 5px;
+      bottom: 5px;
+      background-color: var(--md-sys-color-outline);
+      border-radius: 50%;
+      transition: all var(--m3-motion-duration) var(--m3-motion-easing);
+    }
+    .m3-switch input:checked + .m3-switch-track {
+      background-color: var(--md-sys-color-error);
+      border-color: var(--md-sys-color-error);
+    }
+    .m3-switch input:checked + .m3-switch-track::before {
+      transform: translateX(20px);
+      width: 22px;
+      height: 22px;
+      bottom: 2px;
+      left: 3px;
+      background-color: var(--md-sys-color-on-error);
+    }
+
+    /* M3 Badges Tag */
+    .m3-tags-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .m3-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: var(--m3-shape-xs);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .m3-tag-random {
+      background: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
+    }
+    .m3-tag-band {
+      background: var(--md-sys-color-surface-container-highest);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .m3-tag-blocked {
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+    }
+    .m3-tag-new {
+      background: var(--md-sys-color-error);
+      color: var(--md-sys-color-on-error);
+      animation: m3-pulse 1.4s infinite;
+    }
+    .m3-tag-qos {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+    }
+    @keyframes m3-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* MD3 Signal Bars (RSSI) */
+    .rssi-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .rssi-bar {
+      width: 3px;
+      background: var(--md-sys-color-outline-variant);
+      border-radius: 1px;
+    }
+    .rssi-bar:nth-child(1) { height: 25%; }
+    .rssi-bar:nth-child(2) { height: 50%; }
+    .rssi-bar:nth-child(3) { height: 75%; }
+    .rssi-bar:nth-child(4) { height: 100%; }
+    .rssi-bars[data-level="1"] .rssi-bar:nth-child(1) { background: var(--md-sys-color-error); }
+    .rssi-bars[data-level="2"] .rssi-bar:nth-child(-n+2) { background: #FF9800; }
+    .rssi-bars[data-level="3"] .rssi-bar:nth-child(-n+3) { background: var(--md-sys-color-success); }
+    .rssi-bars[data-level="4"] .rssi-bar:nth-child(-n+4) { background: var(--md-sys-color-success); }
+
+    /* Info Matrix Container */
+    .dev-data-box {
+      background: var(--md-sys-color-surface-container);
+      border-radius: var(--m3-shape-md);
+      padding: 8px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      font-size: 0.74rem;
+    }
+    .matrix-field {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      user-select: none;
+    }
+    .matrix-field:active { opacity: 0.6; }
+    .matrix-key {
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface-variant);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .matrix-val {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Card Footer & Action Buttons */
+    .card-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+    }
+    .live-speed {
+      display: flex;
+      gap: 8px;
+      font-family: monospace;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+    .speed-down { color: var(--md-sys-color-primary); }
+    .speed-up { color: var(--md-sys-color-success); }
+
+    .btn-actions-cluster {
+      display: flex;
+      gap: 4px;
+    }
+    .m3-btn-tonal {
+      border: none;
+      background: var(--md-sys-color-surface-container-high);
+      color: var(--md-sys-color-on-surface);
+      padding: 6px 9px;
+      border-radius: var(--m3-shape-sm);
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .m3-btn-tonal:active {
+      background: var(--md-sys-color-surface-container-highest);
+    }
+    .m3-btn-tonal.danger {
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+    }
+
+    /* Floating Action Button (M3 FAB) */
+    .m3-fab {
+      position: fixed;
+      right: 20px;
+      bottom: 84px;
+      height: 56px;
+      padding: 0 20px;
+      border-radius: var(--m3-shape-lg);
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      border: none;
+      box-shadow: var(--md-elevation-3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 45;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .m3-fab:active {
+      transform: scale(0.94);
+    }
+
+    /* MD3 Navigation Bar (Bottom Navigation) */
+    .m3-nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      background: var(--md-sys-color-surface-container);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+      padding: 0 12px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .m3-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 4px 16px;
+    }
+    .nav-pill {
+      width: 58px;
+      height: 30px;
+      border-radius: var(--m3-shape-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      transition: background var(--m3-motion-duration);
+    }
+    .nav-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .m3-nav-item.active .nav-pill {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+    }
+    .m3-nav-item.active .nav-label {
+      color: var(--md-sys-color-on-surface);
+      font-weight: 800;
+    }
+
+    /* MD3 Dialog Modal */
+    .m3-dialog-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .m3-dialog-scrim.hidden { display: none; }
+    .m3-dialog-surface {
+      background: var(--md-sys-color-surface-container-high);
+      border-radius: var(--m3-shape-xl);
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--md-elevation-3);
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .dialog-headline {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 8px;
+    }
+    .dialog-text {
+      font-size: 0.88rem;
+      color: var(--md-sys-color-on-surface-variant);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+    .m3-text-field {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: var(--m3-shape-xs);
+      border: 1px solid var(--md-sys-color-outline);
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      font-size: 0.95rem;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .m3-text-field:focus {
+      border-color: var(--md-sys-color-primary);
+      border-width: 2px;
+    }
+    .dialog-buttons-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    /* Icon Picker Grid */
+    .icon-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px;
+      margin-bottom: 12px;
+    }
+    .icon-opt-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--m3-shape-md);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface);
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .icon-opt-btn:active, .icon-opt-btn.selected {
+      background: var(--md-sys-color-primary-container);
+      border-color: var(--md-sys-color-primary);
+    }
+
+    /* M3 Snackbar / Toast */
+    #snackbar-container {
+      position: fixed;
+      bottom: 80px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 120;
+      pointer-events: none;
+    }
+    .m3-snackbar {
+      padding: 10px 18px;
+      border-radius: var(--m3-shape-xs);
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: var(--md-sys-color-on-surface);
+      color: var(--md-sys-color-surface);
+      box-shadow: var(--md-elevation-3);
+      max-width: 480px;
+      pointer-events: auto;
+      animation: snackbarIn 0.2s cubic-bezier(0,0,0.2,1);
+    }
+    @keyframes snackbarIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Material 3 Top App Bar -->
+  <header class="top-app-bar">
+    <div class="bar-row">
+      <div class="app-title-group">
+        <h1 class="app-title">Quản lý Thiết bị</h1>
+        <span class="m3-badge-pill">CR6608 M3</span>
+      </div>
+      <div class="top-actions">
+        <button class="btn-m3-icon" id="btn-backup-data" title="Sao lưu / Khôi phục tên & icon">💾</button>
+        <button class="btn-m3-icon" id="btn-toggle-theme" title="Đổi chế độ Sáng/Tối">🌓</button>
+        <button class="btn-m3-icon" id="btn-refresh" title="Làm mới">↻</button>
+      </div>
+    </div>
+
+    <!-- Tonal Traffic Board -->
+    <div class="traffic-overview-card">
+      <div class="traffic-stat-item">
+        <div class="stat-indicator rx"></div>
+        <div class="stat-text">
+          <span class="stat-label">Tải xuống</span>
+          <span class="stat-val rx" id="total-rx">0.0 KB/s</span>
+        </div>
+      </div>
+      <div class="traffic-stat-item">
+        <div class="stat-indicator tx"></div>
+        <div class="stat-text">
+          <span class="stat-label">Tải lên</span>
+          <span class="stat-val tx" id="total-tx">0.0 KB/s</span>
+        </div>
+      </div>
+      <div class="traffic-stat-item">
+        <div class="stat-text" style="text-align: right;">
+          <span class="stat-label">Trực tuyến</span>
+          <span class="stat-val" id="stats-summary">0 / 0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- M3 Search & Filter Controls -->
+  <section>
+    <div class="m3-search-bar">
+      <span>🔍</span>
+      <input type="search" id="input-search" placeholder="Tìm tên, IP, MAC, hãng sản xuất..." autocomplete="off">
+    </div>
+
+    <div class="chips-carousel" id="filter-chips">
+      <div class="m3-chip active" data-filter="all">Tất cả</div>
+      <div class="m3-chip" data-filter="5g">🚀 5GHz</div>
+      <div class="m3-chip" data-filter="2g">📶 2.4GHz</div>
+      <div class="m3-chip" data-filter="lan">🔌 Cáp LAN</div>
+      <div class="m3-chip" data-filter="blocked">🚫 Bị chặn</div>
+      <div class="m3-chip" data-filter="sort-speed">⚡ Tốc độ cao</div>
+      <div class="m3-chip" data-filter="weak-signal">📉 Sóng yếu</div>
+    </div>
+  </section>
+
+  <!-- Main Devices List -->
+  <main>
+    <div id="device-list" class="device-grid"></div>
+    <div id="empty-state" style="display: none; text-align: center; padding: 48px 16px; color: var(--md-sys-color-on-surface-variant); font-size: 0.9rem;">
+      Không tìm thấy thiết bị nào phù hợp.
+    </div>
+  </main>
+
+  <!-- Extended M3 FAB for Custom MAC Blacklisting -->
+  <button class="m3-fab" id="fab-add-mac">
+    <span>➕</span>
+    <span>Chặn MAC thủ công</span>
+  </button>
+
+  <!-- M3 Bottom Navigation Bar -->
+  <nav class="m3-nav-bar">
+    <button class="m3-nav-item active" id="tab-clients">
+      <div class="nav-pill">📱</div>
+      <span class="nav-label">Kết nối (<span id="count-clients">0</span>)</span>
+    </button>
+    <button class="m3-nav-item" id="tab-blacklist">
+      <div class="nav-pill">🚫</div>
+      <span class="nav-label">Blacklist (<span id="count-blacklist">0</span>)</span>
+    </button>
+  </nav>
+
+  <!-- Dialog Modal Hộp thoại M3 -->
+  <div class="m3-dialog-scrim hidden" id="app-dialog">
+    <div class="m3-dialog-surface">
+      <h3 class="dialog-headline" id="dialog-title">Tiêu đề</h3>
+      <p class="dialog-text" id="dialog-desc">Mô tả nội dung</p>
+
+      <div id="dialog-content-custom" style="display: none;"></div>
+
+      <div class="dialog-buttons-row">
+        <button class="m3-btn-tonal" id="dialog-btn-cancel">Hủy</button>
+        <button class="m3-btn-tonal danger" id="dialog-btn-confirm">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="snackbar-container"></div>
+
+  <script>
+const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.status===401)location.replace('/login.html');return r;};
+    /**
+     * Xiaomi CR6608 Device Master Engine - Material Design 3 Edition
+     * Cung cấp đổi icon, sao lưu, WOL, M3 styling, chống ghi flash và tiết kiệm tài nguyên
+     */
+    const DEMO_MODE = false;
+    const API_ENDPOINT = '/cgi-bin/devmgr';
+
+    // Danh mục Icon M3 phong phú cho thiết bị
+    const ICON_COLLECTION = [
+      '📱', '💻', '🖥️', '📺', '📟', '🎮', '💡', '📷',
+      '🤖', '🔊', '⌚', '🔌', '🖨️', '📡', '🚗', '🔒',
+      '❄️', '🧹', '📻', '🚪', '🛎️', '🌐', '📦', '🏷️'
+    ];
+
+    // OUI Database phổ biến tra cứu nhanh phần cứng
+    const OUI_DATABASE = {
+      'F0:99:BF': 'Apple iPhone', 'AC:BC:32': 'Apple', 'F4:F5:DB': 'Apple', 'DC:A9:04': 'Apple iPad',
+      '4A:33:2C': 'Apple (Private)', 'B4:FB:E4': 'Xiaomi', '7C:49:EB': 'Xiaomi', '64:90:C1': 'Xiaomi',
+      '50:EC:50': 'Samsung Galaxy', 'BC:24:11': 'Samsung TV', '34:C9:F0': 'Samsung',
+      '84:F3:EB': 'Espressif (IoT)', 'EC:FA:BC': 'Espressif', 'A4:CF:12': 'Espressif (ESP)',
+      'D8:3A:DD': 'Raspberry Pi', 'B8:27:EB': 'Raspberry Pi', 'E4:5F:01': 'Raspberry Pi',
+      '00:1A:7D': 'Sony PlayStation', 'FC:0F:E6': 'Sony', '70:66:55': 'TP-Link',
+      '38:F8:89': 'Huawei', '70:54:F5': 'Huawei', '28:6C:07': 'Xiaomi Router'
+    };
+
+    let state = {
+      devices: [],
+      currentTab: 'clients',
+      filter: 'all',
+      searchQuery: '',
+      isWriting: false,
+      pollTimeoutId: null,
+      backoffDelay: 5000,
+      consecutiveErrors: 0,
+      customIcons: JSON.parse(localStorage.getItem('cr6608_custom_icons') || '{}'),
+      knownMacs: new Set(JSON.parse(localStorage.getItem('cr6608_known_macs') || '[]')),
+      newMacs: new Set(),
+      seeded: localStorage.getItem('cr6608_known_macs') !== null
+    };
+
+    function hapticFeedback() {
+      if (navigator.vibrate) navigator.vibrate(25);
+    }
+
+    function isRandomizedMAC(mac) {
+      if (!mac || mac.length < 2) return false;
+      const byte = parseInt(mac.slice(0, 2), 16);
+      return !isNaN(byte) && Boolean(byte & 0x02);
+    }
+
+    function calculateSignalLevel(signalDbm) {
+      if (signalDbm === undefined || signalDbm === null || signalDbm === 0) return { level: 0, label: 'Cáp' };
+      if (signalDbm >= -55) return { level: 4, label: 'Cực mạnh' };
+      if (signalDbm >= -67) return { level: 3, label: 'Tốt' };
+      if (signalDbm >= -78) return { level: 2, label: 'Trung bình' };
+      return { level: 1, label: 'Yếu' };
+    }
+
+    function resolveDeviceSmartProfile(d) {
+      const mac = (d.mac || '').toUpperCase();
+      const isRandom = isRandomizedMAC(mac);
+      const cleanOUI = mac.substring(0, 8);
+      const last4 = mac.replace(/[:-]/g, '').slice(-4);
+      let brand = d.vendor || (isRandom ? '' : OUI_DATABASE[cleanOUI]) || '';
+
+      // Tên ưu tiên
+      let primaryName = '';
+      if (d.name && d.name.trim()) {
+        primaryName = d.name.trim();
+      } else {
+        let cleanHostname = (d.hostname || '').trim();
+        if (cleanHostname === '*' || cleanHostname === '?' || /^android-[0-9a-f]{8,}$/i.test(cleanHostname)) {
+          cleanHostname = '';
+        }
+        if (cleanHostname) {
+          primaryName = cleanHostname;
+          if (/iphone/i.test(cleanHostname)) brand = 'Apple iPhone';
+          else if (/ipad/i.test(cleanHostname)) brand = 'Apple iPad';
+          else if (/galaxy/i.test(cleanHostname)) brand = 'Samsung Galaxy';
+        } else if (brand) {
+          primaryName = `${brand} · ${last4}`;
+        } else if (isRandom) {
+          primaryName = `Thiết bị riêng tư · ${last4}`;
+        } else {
+          primaryName = `Thiết bị ${last4 || 'Mạng'}`;
+        }
+      }
+
+      // Icon ưu tiên: Tự chọn > Băng tần/Tên máy
+      let icon = state.customIcons[mac] || '';
+      if (!icon) {
+        if (d.band === 'LAN') icon = '🖥️';
+        else if (/tv|tivi/i.test(primaryName) || /tv/i.test(brand)) icon = '📺';
+        else if (/iot|esp|vacuum|camera|light|plug/i.test(primaryName) || /espressif/i.test(brand)) icon = '💡';
+        else if (/ipad|tablet/i.test(primaryName)) icon = '📟';
+        else if (/macbook|laptop|pc|desktop/i.test(primaryName)) icon = '💻';
+        else icon = '📱';
+      }
+
+      return {
+        name: primaryName,
+        brand: brand || (isRandom ? 'MAC riêng tư' : 'Chuẩn mạng'),
+        icon,
+        isRandom
+      };
+    }
+
+    function formatSpeed(bytes) {
+      if (!bytes || bytes <= 0) return '0 B/s';
+      const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+      const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+    }
+
+    function showSnackbar(message) {
+      const container = document.getElementById('snackbar-container');
+      const snack = document.createElement('div');
+      snack.className = 'm3-snackbar';
+      snack.textContent = message;
+      container.appendChild(snack);
+      setTimeout(() => {
+        snack.style.opacity = '0';
+        snack.style.transform = 'translateY(10px)';
+        snack.style.transition = 'all 0.2s';
+        setTimeout(() => snack.remove(), 200);
+      }, 2500);
+    }
+
+    function copyToClipboard(text, label) {
+      hapticFeedback();
+      const input = document.createElement('input');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      input.remove();
+      showSnackbar(`Đã chép ${label}: ${text}`);
+    }
+
+    function debounce(func, wait = 250) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    // Thiết lập Theme Material 3 thuần túy
+    function setupThemeM3() {
+      const savedTheme = localStorage.getItem('cr6608_m3_theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+
+      document.getElementById('btn-toggle-theme').onclick = () => {
+        hapticFeedback();
+        const cur = document.documentElement.getAttribute('data-theme');
+        const next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('cr6608_m3_theme', next);
+        showSnackbar(`Giao diện: ${next === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}`);
+      };
+    }
+
+    async function apiPost(payload) {
+      if (state.isWriting) {
+        showSnackbar('Đang thực thi tác vụ...');
+        return false;
+      }
+      state.isWriting = true;
+      document.querySelectorAll('button, input').forEach(el => {
+        if (!el.closest('#app-dialog')) el.disabled = true;
+      });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.ok) {
+          hapticFeedback();
+          showSnackbar('Thực hiện thành công');
+          return true;
+        } else {
+          showSnackbar(data.error || 'Router từ chối thao tác');
+          return false;
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        showSnackbar(err.name === 'AbortError' ? 'Lỗi: Quá thời gian phản hồi (4s)' : 'Lỗi kết nối router');
+        return false;
+      } finally {
+        state.isWriting = false;
+        document.querySelectorAll('button, input').forEach(el => el.disabled = false);
+      }
+    }
+
+    // Dialog Manager
+    const dialog = {
+      scrim: document.getElementById('app-dialog'),
+      title: document.getElementById('dialog-title'),
+      desc: document.getElementById('dialog-desc'),
+      content: document.getElementById('dialog-content-custom'),
+      btnCancel: document.getElementById('dialog-btn-cancel'),
+      btnConfirm: document.getElementById('dialog-btn-confirm'),
+      actionCallback: null
+    };
+
+    function closeDialog() {
+      dialog.scrim.classList.add('hidden');
+      dialog.content.innerHTML = '';
+      dialog.content.style.display = 'none';
+      dialog.actionCallback = null;
+    }
+
+    dialog.btnCancel.onclick = closeDialog;
+    dialog.btnConfirm.onclick = () => {
+      if (dialog.actionCallback) dialog.actionCallback();
+      closeDialog();
+    };
+
+    function openConfirmDialog(title, desc, onConfirm) {
+      dialog.title.textContent = title;
+      dialog.desc.textContent = desc;
+      dialog.content.style.display = 'none';
+      dialog.actionCallback = onConfirm;
+      dialog.scrim.classList.remove('hidden');
+    }
+
+    // Modal chọn Icon M3
+    function openIconPickerDialog(mac, curIcon) {
+      dialog.title.textContent = 'Biểu tượng thiết bị';
+      dialog.desc.textContent = `Chọn icon tương ứng cho MAC [${mac}]:`;
+      dialog.content.style.display = 'block';
+
+      let selectedIcon = curIcon;
+      const grid = document.createElement('div');
+      grid.className = 'icon-picker-grid';
+
+      ICON_COLLECTION.forEach(ic => {
+        const btn = document.createElement('button');
+        btn.className = `icon-opt-btn ${ic === curIcon ? 'selected' : ''}`;
+        btn.textContent = ic;
+        btn.onclick = () => {
+          grid.querySelectorAll('.icon-opt-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedIcon = ic;
+        };
+        grid.appendChild(btn);
+      });
+
+      dialog.content.innerHTML = '';
+      dialog.content.appendChild(grid);
+
+      dialog.actionCallback = () => {
+        state.customIcons[mac] = selectedIcon;
+        localStorage.setItem('cr6608_custom_icons', JSON.stringify(state.customIcons));
+        renderFilteredView();
+        showSnackbar(`Đã cập nhật biểu tượng ${selectedIcon}`);
+      };
+
+      dialog.scrim.classList.remove('hidden');
+    }
+
+    // Modal Đổi tên
+    function openRenameDialog(mac, curName) {
+      dialog.title.textContent = 'Đổi tên thiết bị';
+      dialog.desc.textContent = `Lưu tên ghi nhớ trên OpenWrt cho MAC [${mac}]:`;
+      dialog.content.style.display = 'block';
+
+      const input = document.createElement('input');
+      input.className = 'm3-text-field';
+      input.maxLength = 32;
+      input.value = curName.includes('·') ? '' : curName;
+      input.placeholder = 'Nhập tên nhận diện...';
+
+      dialog.content.innerHTML = '';
+      dialog.content.appendChild(input);
+
+      dialog.actionCallback = () => {
+        const val = input.value.trim();
+        if (val !== curName) {
+          apiPost({ action: 'rename', mac, name: val }).then(ok => { if(ok) fetchDeviceData(true); });
+        }
+      };
+
+      dialog.scrim.classList.remove('hidden');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    // Modal Thêm MAC Blacklist thủ công
+    function openAddMacDialog() {
+      dialog.title.textContent = 'Thêm Blacklist thủ công';
+      dialog.desc.textContent = 'Cấm vĩnh viễn thiết bị truy cập Wi-Fi ngay cả khi chưa kết nối:';
+      dialog.content.style.display = 'block';
+
+      const input = document.createElement('input');
+      input.className = 'm3-text-field';
+      input.maxLength = 17;
+      input.placeholder = 'Ví dụ: AA:BB:CC:DD:EE:FF';
+
+      dialog.content.innerHTML = '';
+      dialog.content.appendChild(input);
+
+      dialog.actionCallback = () => {
+        const val = input.value.trim().toUpperCase();
+        if (/^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/.test(val)) {
+          apiPost({ action: 'blacklist_add', mac: val }).then(ok => { if(ok) fetchDeviceData(true); });
+        } else {
+          showSnackbar('Địa chỉ MAC không hợp lệ');
+        }
+      };
+
+      dialog.scrim.classList.remove('hidden');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    // Sao lưu / Khôi phục dữ liệu
+    function openBackupDialog() {
+      dialog.title.textContent = 'Sao lưu & Khôi phục';
+      dialog.desc.textContent = 'Xuất hoặc khôi phục danh sách icon và cấu hình đã lưu trên trình duyệt:';
+      dialog.content.style.display = 'block';
+
+      const container = document.createElement('div');
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.gap = '10px';
+
+      const txtArea = document.createElement('textarea');
+      txtArea.className = 'm3-text-field';
+      txtArea.style.height = '90px';
+      txtArea.value = JSON.stringify(state.customIcons);
+
+      const btnRestore = document.createElement('button');
+      btnRestore.className = 'm3-btn-tonal';
+      btnRestore.textContent = '📥 Nạp dữ liệu từ khung trên';
+      btnRestore.onclick = () => {
+        try {
+          const parsed = JSON.parse(txtArea.value.trim());
+          state.customIcons = parsed;
+          localStorage.setItem('cr6608_custom_icons', JSON.stringify(parsed));
+          renderFilteredView();
+          showSnackbar('Khôi phục icon thành công!');
+          closeDialog();
+        } catch(e) {
+          showSnackbar('Dữ liệu JSON không đúng cú pháp');
+        }
+      };
+
+      container.appendChild(txtArea);
+      container.appendChild(btnRestore);
+      dialog.content.innerHTML = '';
+      dialog.content.appendChild(container);
+      dialog.actionCallback = null;
+      dialog.scrim.classList.remove('hidden');
+    }
+
+    // Modal Đánh thức máy tính qua mạng (WOL)
+    function triggerWOL(mac) {
+      openConfirmDialog('Đánh thức máy qua LAN (WOL)', `Gửi Magic Packet để bật máy có MAC [${mac}]?`, () => {
+        apiPost({ action: 'wol', mac }).then(ok => {
+          if (ok) showSnackbar('Đã phát gói tin Wake-on-LAN');
+        });
+      });
+    }
+
+    // DOM Diffing Render Card
+    function updateOrInsertCard(container, d) {
+      let card = container.querySelector(`[data-mac="${d.mac}"]`);
+      const profile = resolveDeviceSmartProfile(d);
+      const isOffline = !d.online;
+      const sig = calculateSignalLevel(d.signal);
+      const isNew = state.newMacs.has(d.mac);
+
+      if (!card) {
+        card = document.createElement('article');
+        card.className = `m3-card ${isOffline ? 'offline' : ''}`;
+        card.setAttribute('data-mac', d.mac);
+
+        card.innerHTML = `
+          <div class="card-header-row">
+            <div class="dev-profile">
+              <button class="dev-icon-button" title="Bấm để đổi Icon thiết bị">
+                <span class="txt-icon"></span>
+                <span class="icon-edit-badge">✎</span>
+              </button>
+              <div class="dev-names-wrap" title="Bấm để sửa tên">
+                <div class="dev-primary-name"><span class="txt-name"></span><span class="edit-pen">✎</span></div>
+                <div class="dev-secondary-desc"></div>
+                <div class="m3-tags-row"></div>
+              </div>
+            </div>
+            <div class="m3-switch-wrap" title="Chặn truy cập mạng">
+              <label class="m3-switch">
+                <input type="checkbox" class="cb-block">
+                <span class="m3-switch-track"></span>
+              </label>
+              <span style="font-size:0.6rem; color:var(--md-sys-color-on-surface-variant); font-weight:700;">CHẶN</span>
+            </div>
+          </div>
+
+          <div class="dev-data-box">
+            <div class="matrix-field col-ip" title="Bấm sao chép IP">
+              <span class="matrix-key">IP / GIAO DIỆN 📋</span>
+              <span class="matrix-val val-ip-iface">---</span>
+            </div>
+            <div class="matrix-field col-mac" title="Bấm sao chép MAC">
+              <span class="matrix-key">MAC ADDR 📋</span>
+              <span class="matrix-val val-mac">---</span>
+            </div>
+          </div>
+
+          <div class="card-bottom-row">
+            <div class="live-speed">
+              <span class="speed-down">↓ <span class="val-rx">0 B/s</span></span>
+              <span class="speed-up">↑ <span class="val-tx">0 B/s</span></span>
+            </div>
+            <div class="btn-actions-cluster">
+              <button class="m3-btn-tonal btn-wol" title="Wake-on-LAN">WOL</button>
+              <button class="m3-btn-tonal btn-kick" style="display:none;">Kick</button>
+              <button class="m3-btn-tonal danger btn-bl">Blacklist</button>
+            </div>
+          </div>
+        `;
+
+        // Gán sự kiện
+        card.querySelector('.dev-icon-button').onclick = () => {
+          hapticFeedback();
+          openIconPickerDialog(card._d.mac, resolveDeviceSmartProfile(card._d).icon);
+        };
+
+        card.querySelector('.dev-names-wrap').onclick = () => {
+          hapticFeedback();
+          openRenameDialog(card._d.mac, resolveDeviceSmartProfile(card._d).name);
+        };
+
+        card.querySelector('.col-ip').onclick = () => {
+          if (card._d.ip) copyToClipboard(card._d.ip, 'IP');
+        };
+
+        card.querySelector('.col-mac').onclick = () => {
+          copyToClipboard(d.mac, 'MAC');
+        };
+
+        const cbBlock = card.querySelector('.cb-block');
+        cbBlock.onchange = (e) => {
+          hapticFeedback();
+          const d = card._d;
+          const action = e.target.checked ? 'block' : 'unblock';
+          apiPost({ action, mac: d.mac }).then(ok => {
+            if (!ok) e.target.checked = !e.target.checked;
+            else fetchDeviceData(true);
+          });
+        };
+
+        card.querySelector('.btn-wol').onclick = () => triggerWOL(card._d.mac);
+
+        const btnKick = card.querySelector('.btn-kick');
+        btnKick.onclick = () => {
+          const d = card._d, profile = resolveDeviceSmartProfile(d);
+          openConfirmDialog('Kick Wi-Fi', `Ngắt kết nối Wi-Fi ngay của "${profile.name}"?`, () => {
+            apiPost({ action: 'kick', mac: d.mac }).then(ok => { if(ok) fetchDeviceData(true); });
+          });
+        };
+
+        const btnBl = card.querySelector('.btn-bl');
+        btnBl.onclick = () => {
+          const d = card._d, profile = resolveDeviceSmartProfile(d);
+          const isBl = d.blacklisted;
+          openConfirmDialog(
+            isBl ? 'Bỏ Blacklist' : 'Đưa vào Blacklist',
+            `${isBl ? 'Khôi phục kết nối' : 'Cấm hoàn toàn'} cho thiết bị "${profile.name}"?`,
+            () => {
+              apiPost({ action: isBl ? 'blacklist_remove' : 'blacklist_add', mac: d.mac }).then(ok => { if(ok) fetchDeviceData(true); });
+            }
+          );
+        };
+
+        container.appendChild(card);
+      }
+
+      card._d = d; // luôn giữ dữ liệu mới nhất cho các nút bấm
+
+      // DOM Diffing Update
+      if (card.classList.contains('offline') !== isOffline) {
+        card.classList.toggle('offline', isOffline);
+      }
+
+      const elIcon = card.querySelector('.txt-icon');
+      if (elIcon.textContent !== profile.icon) elIcon.textContent = profile.icon;
+
+      const elName = card.querySelector('.txt-name');
+      if (elName.textContent !== profile.name) elName.textContent = profile.name;
+
+      const elSubtitle = card.querySelector('.dev-secondary-desc');
+      let signalHtml = '';
+      if (d.band !== 'LAN' && sig.level > 0) {
+        signalHtml = `
+          <span class="rssi-bars" data-level="${sig.level}" title="${d.signal} dBm (${sig.label})">
+            <span class="rssi-bar"></span><span class="rssi-bar"></span><span class="rssi-bar"></span><span class="rssi-bar"></span>
+          </span>
+        `;
+      }
+      const subtitleRaw = `${profile.brand} · ${d.online ? 'Online' : 'Offline'}`;
+      if (elSubtitle.getAttribute('data-raw') !== subtitleRaw + (d.signal || '')) {
+        elSubtitle.setAttribute('data-raw', subtitleRaw + (d.signal || ''));
+        elSubtitle.innerHTML = `${subtitleRaw} ${signalHtml}`;
+      }
+
+      // Badges
+      const elBadges = card.querySelector('.m3-tags-row');
+      let tagsHTML = '';
+      if (isNew) tagsHTML += '<span class="m3-tag m3-tag-new">MỚI</span>';
+      if (profile.isRandom) tagsHTML += '<span class="m3-tag m3-tag-random">MAC Riêng tư</span>';
+      if (d.band) tagsHTML += `<span class="m3-tag m3-tag-band">${d.band}</span>`;
+      if (d.blocked) tagsHTML += '<span class="m3-tag m3-tag-blocked">Bị chặn</span>';
+      if (d.qos_rate) tagsHTML += `<span class="m3-tag m3-tag-qos">QoS ${d.qos_rate}K</span>`;
+      if (elBadges.innerHTML !== tagsHTML) elBadges.innerHTML = tagsHTML;
+
+      // Switch
+      const cbBlock = card.querySelector('.cb-block');
+      if (cbBlock.checked !== Boolean(d.blocked)) cbBlock.checked = Boolean(d.blocked);
+
+      // Meta Values
+      const elIpIface = card.querySelector('.val-ip-iface');
+      const ipText = `${d.ip || 'Chưa có IP'} (${d.iface || 'eth'})`;
+      if (elIpIface.textContent !== ipText) elIpIface.textContent = ipText;
+
+      const elMac = card.querySelector('.val-mac');
+      if (elMac.textContent !== d.mac) elMac.textContent = d.mac;
+
+      // Speed
+      const elRx = card.querySelector('.val-rx');
+      const rxStr = formatSpeed(d.rx);
+      if (elRx.textContent !== rxStr) elRx.textContent = rxStr;
+
+      const elTx = card.querySelector('.val-tx');
+      const txStr = formatSpeed(d.tx);
+      if (elTx.textContent !== txStr) elTx.textContent = txStr;
+
+      // Kick & Blacklist Buttons
+      const btnKick = card.querySelector('.btn-kick');
+      const canKick = d.online && d.band !== 'LAN' && !d.blacklisted;
+      btnKick.style.display = canKick ? 'inline-block' : 'none';
+
+      const btnBl = card.querySelector('.btn-bl');
+      btnBl.textContent = d.blacklisted ? 'Bỏ Blacklist' : 'Blacklist';
+
+      return card;
+    }
+
+    // Render bộ lọc & dọn rác offline
+    function renderFilteredView() {
+      const container = document.getElementById('device-list');
+      const emptyState = document.getElementById('empty-state');
+
+      let list = state.devices.filter(d => {
+        if (state.currentTab === 'blacklist') return d.blacklisted;
+        return !d.blacklisted && (d.online === true || d.blocked === true);
+      });
+
+      if (state.filter === '5g') {
+        list = list.filter(d => (d.band || '').includes('5G'));
+      } else if (state.filter === '2g') {
+        list = list.filter(d => (d.band || '').includes('2.4G') || (d.band || '').includes('2G'));
+      } else if (state.filter === 'lan') {
+        list = list.filter(d => (d.band || '') === 'LAN');
+      } else if (state.filter === 'blocked') {
+        list = list.filter(d => d.blocked);
+      } else if (state.filter === 'weak-signal') {
+        list = list.filter(d => d.online && d.band !== 'LAN' && d.signal && d.signal < -75);
+      } else if (state.filter === 'sort-speed') {
+        list.sort((a, b) => ((b.rx || 0) + (b.tx || 0)) - ((a.rx || 0) + (a.tx || 0)));
+      }
+
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        list = list.filter(d => {
+          const p = resolveDeviceSmartProfile(d);
+          return (d.mac && d.mac.toLowerCase().includes(q)) ||
+                 (d.ip && d.ip.includes(q)) ||
+                 p.name.toLowerCase().includes(q) ||
+                 p.brand.toLowerCase().includes(q);
+        });
+      }
+
+      const activeMacs = new Set(list.map(d => d.mac));
+      container.querySelectorAll('.m3-card').forEach(card => {
+        if (!activeMacs.has(card.getAttribute('data-mac'))) {
+          card.remove();
+        }
+      });
+
+      list.forEach((dev, i) => {
+        const card = updateOrInsertCard(container, dev);
+        if (container.children[i] !== card) container.insertBefore(card, container.children[i] || null);
+      });
+      emptyState.style.display = list.length === 0 ? 'block' : 'none';
+
+      updateHeaderStats();
+    }
+
+    function updateHeaderStats() {
+      const activeClients = state.devices.filter(d => !d.blacklisted && (d.online || d.blocked));
+      const onlineClients = activeClients.filter(d => d.online);
+      const blacklistedCount = state.devices.filter(d => d.blacklisted).length;
+
+      document.getElementById('count-clients').textContent = activeClients.length;
+      document.getElementById('count-blacklist').textContent = blacklistedCount;
+      document.getElementById('stats-summary').textContent = `${onlineClients.length} / ${activeClients.length}`;
+
+      let sumRx = 0, sumTx = 0;
+      activeClients.forEach(d => {
+        if (d.online) {
+          sumRx += (d.rx || 0);
+          sumTx += (d.tx || 0);
+        }
+      });
+      document.getElementById('total-rx').textContent = formatSpeed(sumRx);
+      document.getElementById('total-tx').textContent = formatSpeed(sumTx);
+    }
+
+    // Polling Engine tối ưu CPU
+    async function fetchDeviceData(force = false) {
+      if (state.pollTimeoutId) {
+        clearTimeout(state.pollTimeoutId);
+        state.pollTimeoutId = null;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      try {
+        const res = await fetch(`${API_ENDPOINT}?action=list`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        state.devices = json.devices || [];
+
+        let isUpdatedMacs = false;
+        state.devices.forEach(d => {
+          if (d.mac && !state.knownMacs.has(d.mac)) {
+            state.knownMacs.add(d.mac);
+            if (state.seeded) state.newMacs.add(d.mac);
+            isUpdatedMacs = true;
+          }
+        });
+        if (state.devices.length) state.seeded = true;
+        if (isUpdatedMacs) {
+          localStorage.setItem('cr6608_known_macs', JSON.stringify(Array.from(state.knownMacs)));
+        }
+
+        state.consecutiveErrors = 0;
+        state.backoffDelay = 5000;
+        renderFilteredView();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        state.consecutiveErrors++;
+        state.backoffDelay = state.consecutiveErrors >= 2 ? 30000 : 10000;
+      } finally {
+        if (document.visibilityState === 'visible') {
+          state.pollTimeoutId = setTimeout(() => fetchDeviceData(), state.backoffDelay);
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchDeviceData(true);
+      } else if (state.pollTimeoutId) {
+        clearTimeout(state.pollTimeoutId);
+        state.pollTimeoutId = null;
+      }
+    });
+
+    function setupControls() {
+      document.getElementById('input-search').addEventListener('input', debounce((e) => {
+        state.searchQuery = e.target.value.trim();
+        renderFilteredView();
+      }, 250));
+
+      document.getElementById('filter-chips').onclick = (e) => {
+        const chip = e.target.closest('.m3-chip');
+        if (!chip) return;
+        hapticFeedback();
+        document.querySelectorAll('.m3-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.filter = chip.getAttribute('data-filter');
+        renderFilteredView();
+      };
+
+      const tabClients = document.getElementById('tab-clients');
+      const tabBlacklist = document.getElementById('tab-blacklist');
+
+      tabClients.onclick = () => {
+        hapticFeedback();
+        if (state.currentTab === 'clients') return;
+        state.currentTab = 'clients';
+        tabClients.classList.add('active');
+        tabBlacklist.classList.remove('active');
+        renderFilteredView();
+      };
+
+      tabBlacklist.onclick = () => {
+        hapticFeedback();
+        if (state.currentTab === 'blacklist') return;
+        state.currentTab = 'blacklist';
+        tabBlacklist.classList.add('active');
+        tabClients.classList.remove('active');
+        renderFilteredView();
+      };
+
+      document.getElementById('btn-refresh').onclick = () => {
+        hapticFeedback();
+        showSnackbar('Đang cập nhật danh sách...');
+        fetchDeviceData(true);
+      };
+
+      document.getElementById('fab-add-mac').onclick = () => {
+        hapticFeedback();
+        openAddMacDialog();
+      };
+
+      document.getElementById('btn-backup-data').onclick = () => {
+        hapticFeedback();
+        openBackupDialog();
+      };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setupThemeM3();
+      setupControls();
+      fetchDeviceData(true);
+    });
+  </script>
+</body>
+</html>
