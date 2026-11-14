@@ -1,0 +1,6 @@
+#!/bin/sh
+c=$(echo "$HTTP_COOKIE" | tr ';' '\n' | sed -n 's/^ *dmsid=\([0-9a-f]*\)$/\1/p' | head -1)
+if [ -z "$c" ] || ! ubus call session get "{\"ubus_rpc_session\":\"$c\"}" >/dev/null 2>&1; then
+  printf 'Status: 401 Unauthorized\r\nContent-Type: application/json\r\n\r\n{"ok":false,"error":"auth"}\n'; exit 0
+fi
+exec /etc/devmgr/net_api.sh

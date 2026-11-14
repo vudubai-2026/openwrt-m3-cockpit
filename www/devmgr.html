@@ -764,7 +764,7 @@
     <div class="bar-row">
       <div class="app-title-group">
         <h1 class="app-title">Quản lý Thiết bị</h1>
-        <span class="m3-badge-pill">CR6608 v1.2</span>
+        <span class="m3-badge-pill">CR6608 v2.0</span>
       </div>
       <div class="top-actions">
         <button class="btn-m3-icon" id="btn-backup-data" title="Sao lưu / Khôi phục tên & icon">💾</button>
@@ -925,10 +925,11 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
      * Cung cấp đổi icon, sao lưu, WOL, M3 styling, chống ghi flash và tiết kiệm tài nguyên
      */
         const API_ENDPOINT = '/cgi-bin/devmgr';
-    const APP_VER = '1.2';
+    const APP_VER = '2.0';
+    const NET_API = '/cgi-bin/devmgr-net';
     async function checkAutoReload() {
       try {
-        const r = await fetch(`${API_ENDPOINT}?action=net_status&_t=${Date.now()}`, { cache: 'no-store' });
+        const r = await fetch(`${NET_API}?action=status&_t=${Date.now()}`, { cache: 'no-store' });
         const d = await r.json();
         if (d.ver && d.ver !== APP_VER && !sessionStorage.getItem('reloaded_' + d.ver)) {
           sessionStorage.setItem('reloaded_' + d.ver, '1');
@@ -1685,20 +1686,49 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       };
     }
 
-    // === Mạng & QoS Engine (Lazy-load, không tốn RAM/CPU khi ở tab khác) ===
+    // === Mạng & QoS Engine v2.0 (Kênh CGI độc lập /cgi-bin/devmgr-net) ===
+    async function netPost(payload, timeoutMs = 6000) {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+      try {
+        const r = await fetch(NET_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: ctrl.signal
+        });
+        clearTimeout(tid);
+        const d = await r.json();
+        if (d.ok) { hapticFeedback(); return d; }
+        showSnackbar(d.error || 'Lỗi thao tác');
+        return null;
+      } catch (e) {
+        clearTimeout(tid);
+        showSnackbar(e.name === 'AbortError' ? 'Quá thời gian phản hồi' : 'Lỗi kết nối router');
+        return null;
+      }
+    }
+
+    async function delSavedWifi(ssid) {
+      const res = await netPost({ action: 'wifi_del', ssid });
+      if (res) { showSnackbar(`Đã xóa ${ssid}`); loadNetStatus(); }
+    }
+
     async function loadNetStatus() {
       try {
-        const r = await fetch(`${API_ENDPOINT}?action=net_status`);
+        const r = await fetch(`${NET_API}?action=status&_t=${Date.now()}`, { cache: 'no-store' });
         const d = await r.json();
         if (!d.ok) return;
         document.getElementById('cb-sqm').checked = Boolean(d.sqm_en);
         document.getElementById('sqm-info').textContent = `Giới hạn: ↓ ${d.sqm_dl} kbps · ↑ ${d.sqm_ul} kbps`;
-        document.getElementById('rep-cur-ssid').textContent = d.ssid || 'Không rõ';
+        document.getElementById('rep-cur-ssid').innerHTML = `${d.ssid || '---'} <span class="m3-tag m3-tag-qos">Ping: ${d.ping} ms</span>`;
         document.getElementById('cb-failover').checked = Boolean(d.fo_en);
         if (d.free_mb) document.getElementById('ram-free-info').textContent = `${d.free_mb} MB`;
+
         const saved = d.saved || [];
         document.getElementById('rep-saved-list').innerHTML = saved.length
-          ? 'Mạng dự phòng đã lưu: ' + saved.map(s => `<span class="m3-tag m3-tag-band">${s}</span>`).join(' ')
+          ? '<div style="margin-bottom:4px;">Mạng dự phòng (bấm × để xóa):</div><div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+            saved.map(s => `<span class="m3-tag m3-tag-band" style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;">${s} <b style="cursor:pointer;color:var(--md-sys-color-error);" onclick="delSavedWifi('${s.replace(/'/g,"")}')">×</b></span>`).join('') + '</div>'
           : 'Chưa lưu mạng dự phòng nào.';
       } catch(e) {}
     }
@@ -1730,17 +1760,16 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
         <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
           <input type="checkbox" id="cb-w-now" checked> Chuyển sang bắt mạng này ngay
         </label>`;
-      dialog.actionCallback = () => {
+      dialog.actionCallback = async () => {
         const ssid = document.getElementById('inp-w-ssid').value.trim();
         const pass = document.getElementById('inp-w-pass').value;
         const switch_now = document.getElementById('cb-w-now').checked;
         if (!ssid) return showSnackbar('Chưa nhập tên Wi-Fi');
-        apiPost({ action: 'wifi_save', mac: '00:00:00:00:00:00', ssid, pass, switch_now }).then(ok => {
-          if (ok) {
-            showSnackbar(switch_now ? 'Đang chuyển Wi-Fi (chờ ~5s)...' : 'Đã lưu mạng dự phòng');
-            setTimeout(loadNetStatus, 5000);
-          }
-        });
+        const res = await netPost({ action: 'wifi_save', ssid, pass, switch_now });
+        if (res) {
+          showSnackbar(switch_now ? 'Đang chuyển Wi-Fi (chờ ~5s)...' : 'Đã lưu mạng dự phòng');
+          setTimeout(loadNetStatus, 5000);
+        }
       };
       dialog.scrim.classList.remove('hidden');
     }
@@ -1750,47 +1779,38 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
       document.getElementById('tab-blacklist').onclick = () => switchMainTab('blacklist');
       document.getElementById('tab-net').onclick = () => switchMainTab('net');
 
-      document.getElementById('cb-sqm').onchange = (e) => {
-        apiPost({ action: 'sqm_toggle', mac: '00:00:00:00:00:00', enabled: e.target.checked ? '1' : '0' }).then(ok => {
-          if (!ok) e.target.checked = !e.target.checked;
-        });
+      document.getElementById('cb-sqm').onchange = async (e) => {
+        const res = await netPost({ action: 'sqm_toggle', enabled: e.target.checked ? '1' : '0' });
+        if (!res) e.target.checked = !e.target.checked;
+        else showSnackbar(e.target.checked ? 'Đã bật SQM chống lag' : 'Đã tắt SQM');
       };
 
       document.getElementById('btn-sqm-auto').onclick = async () => {
         const btn = document.getElementById('btn-sqm-auto');
         btn.disabled = true;
-        btn.textContent = '⏳ Đang đo tốc độ (khoảng 6 giây)...';
-        try {
-          const r = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'sqm_auto', mac: '00:00:00:00:00:00' })
-          });
-          const d = await r.json();
-          if (d.ok) {
-            showSnackbar(`Đã set SQM: ↓${d.dl} / ↑${d.ul} kbps`);
-            loadNetStatus();
-          } else showSnackbar(d.error || 'Lỗi đo tốc độ');
-        } catch(e) { showSnackbar('Hết thời gian đo mạng'); }
+        btn.textContent = '⏳ Đang đo tốc độ thực tế (~6s)...';
+        const res = await netPost({ action: 'sqm_auto' }, 15000);
+        if (res) {
+          showSnackbar(`Đã set SQM: ↓${res.dl} / ↑${res.ul} kbps`);
+          loadNetStatus();
+        }
         btn.disabled = false;
         btn.textContent = '🚀 Tự đo tốc độ & Cài đặt 85%';
       };
 
-      document.getElementById('cb-failover').onchange = (e) => {
-        apiPost({ action: 'failover_toggle', mac: '00:00:00:00:00:00', enabled: e.target.checked ? '1' : '0' });
+      document.getElementById('cb-failover').onchange = async (e) => {
+        const res = await netPost({ action: 'failover_toggle', enabled: e.target.checked ? '1' : '0' });
+        if (!res) e.target.checked = !e.target.checked;
+        else showSnackbar(e.target.checked ? 'Đã bật Tự cứu mạng Repeater' : 'Đã tắt Auto-Failover');
       };
 
       document.getElementById('btn-wifi-manual').onclick = () => openWifiConfigDialog('');
-      document.getElementById('btn-clean-ram').onclick = async () => {
-        const ok = await apiPost({ action: 'clean_ram', mac: '00:00:00:00:00:00' });
-        if (ok) loadNetStatus();
-      };
 
       document.getElementById('btn-wifi-scan').onclick = async () => {
         const btn = document.getElementById('btn-wifi-scan');
         btn.disabled = true; btn.textContent = '⏳ Đang quét sóng...';
         try {
-          const r = await fetch(`${API_ENDPOINT}?action=wifi_scan`);
+          const r = await fetch(`${NET_API}?action=wifi_scan&_t=${Date.now()}`, { cache: 'no-store' });
           const d = await r.json();
           const aps = d.aps || [];
           if (!aps.length) showSnackbar('Không quét được sóng Wi-Fi nào');
@@ -1808,6 +1828,14 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
           }
         } catch(e) { showSnackbar('Lỗi quét Wi-Fi'); }
         btn.disabled = false; btn.textContent = '🔍 Quét & Đổi Wi-Fi';
+      };
+
+      document.getElementById('btn-clean-ram').onclick = async () => {
+        const res = await netPost({ action: 'clean_ram' });
+        if (res) {
+          document.getElementById('ram-free-info').textContent = `${res.free_mb} MB`;
+          showSnackbar(`Đã dọn sạch RAM! Còn trống ${res.free_mb} MB`);
+        }
       };
     }
 
