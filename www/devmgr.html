@@ -764,7 +764,7 @@
     <div class="bar-row">
       <div class="app-title-group">
         <h1 class="app-title">Quản lý Thiết bị</h1>
-        <span class="m3-badge-pill">CR6608 v2.2</span>
+        <span class="m3-badge-pill">CR6608 v2.3</span>
       </div>
       <div class="top-actions">
         <button class="btn-m3-icon" id="btn-backup-data" title="Sao lưu / Khôi phục tên & icon">💾</button>
@@ -925,7 +925,7 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
      * Cung cấp đổi icon, sao lưu, WOL, M3 styling, chống ghi flash và tiết kiệm tài nguyên
      */
         const API_ENDPOINT = '/cgi-bin/devmgr';
-    const APP_VER = '2.2';
+    const APP_VER = '2.3';
     const NET_API = '/cgi-bin/devmgr-net';
     async function checkAutoReload() {
       try {
@@ -1795,7 +1795,24 @@ const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.sta
           loadNetStatus();
         }
         btn.disabled = false;
-        btn.textContent = '🚀 Tự đo tốc độ & Cài đặt 85%';
+        btn.textContent = '🚀 Đo 4 luồng & Set 85%';
+      };
+
+      document.getElementById('btn-sqm-manual').onclick = () => {
+        dialog.title.textContent = 'Đặt giới hạn SQM (5GHz)';
+        dialog.desc.textContent = 'Với mạng 170 Mbps, nên đặt khoảng 140 - 150 Mbps (85%):';
+        dialog.content.style.display = 'block';
+        dialog.content.innerHTML = `
+          <input id="inp-sqm-dl" type="number" class="m3-text-field" placeholder="Download Mbps (vd: 145)" value="145">
+          <input id="inp-sqm-ul" type="number" class="m3-text-field" placeholder="Upload Mbps (vd: 80)" value="80">`;
+        dialog.actionCallback = async () => {
+          const dlMbps = parseFloat(document.getElementById('inp-sqm-dl').value);
+          const ulMbps = parseFloat(document.getElementById('inp-sqm-ul').value);
+          if (!dlMbps || dlMbps < 1) return showSnackbar('Nhập số Mbps hợp lệ');
+          const res = await netPost({ action: 'sqm_manual', dl: Math.round(dlMbps * 1000), ul: Math.round((ulMbps || dlMbps / 2) * 1000) });
+          if (res) { showSnackbar(`Đã gắn SQM (${res.iface}): ↓${res.dl} / ↑${res.ul} kbps`); loadNetStatus(); }
+        };
+        dialog.scrim.classList.remove('hidden');
       };
 
       document.getElementById('cb-failover').onchange = async (e) => {

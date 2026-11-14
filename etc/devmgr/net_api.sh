@@ -25,16 +25,34 @@ get_5g_ap_dev() {
   echo "phy1-ap0"
 }
 
+apply_sqm_5g() {
+  AP5=$(get_5g_ap_dev)
+  uci set sqm.@queue[0].interface="$AP5"
+  uci set sqm.@queue[0].qdisc='fq_codel'
+  uci set sqm.@queue[0].script='simple.qos'
+  uci set sqm.@queue[0].upload="$1"
+  uci set sqm.@queue[0].download="$2"
+  uci set sqm.@queue[0].enabled="1"
+  uci commit sqm
+  /etc/init.d/sqm restart >/dev/null 2>&1
+  echo "$AP5"
+}
+
 measure_dl_kbps() {
-  URLS="https://speed.cloudflare.com/__down?bytes=15000000 http://proof.ovh.net/files/10Mb.dat http://speedtest.tele2.net/10MB.zip"
-  for url in $URLS; do
-    res=$(curl -k -L -s -o /dev/null -w '%{speed_download}' --connect-timeout 3 --max-time 4 "$url" 2>/dev/null | cut -d. -f1)
-    if [ -n "$res" ] && [ "$res" -gt 100000 ]; then
-      echo $(( (res * 8 * 85) / 100000 ))
-      return 0
-    fi
+  # Chạy 4 luồng curl song song trong 5s để đạt tối đa băng thông (giống Speedtest)
+  rm -f /tmp/spd_*.out
+  for n in 1 2 3 4; do
+    curl -k -s -o /dev/null -w '%{speed_download}\n' --connect-timeout 3 --max-time 5 \
+      "https://speed.cloudflare.com/__down?bytes=50000000" > "/tmp/spd_${n}.out" 2>/dev/null &
   done
-  echo 0
+  wait
+  TOTAL_BPS=$(awk '{sum+=$1} END{printf "%.0f", sum}' /tmp/spd_*.out 2>/dev/null)
+  rm -f /tmp/spd_*.out
+  if [ -n "$TOTAL_BPS" ] && [ "$TOTAL_BPS" -gt 200000 ]; then
+    echo $(( (TOTAL_BPS * 8 * 85) / 100000 ))
+  else
+    echo 0
+  fi
 }
 
 case "$act" in
@@ -48,12 +66,12 @@ case "$act" in
     SAVED=$(awk -F'|' 'NF>=2{gsub(/"/,"",$1); printf "\"%s\",",$1}' /etc/devmgr/wifi_backup.list 2>/dev/null | sed 's/,$//')
     FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
     PING_MS=$(ping -c 1 -W 1 1.1.1.1 2>/dev/null | sed -n 's/.*time=\([0-9.]*\).*/\1/p' | head -1)
-    printf '{"ok":true,"ver":"2.2","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
+    printf '{"ok":true,"ver":"2.3","free_mb":"%s","ping":"%s","sqm_en":%s,"sqm_dl":%s,"sqm_ul":%s,"ssid":"%s","fo_en":%s,"saved":[%s]}\n' \
       "$FREE_MB" "${PING_MS:-timeout}" "$SQM_EN" "$SQM_DL" "$SQM_UL" "$SSID" "$FO_EN" "$SAVED"
     exit 0 ;;
 
   clean_ram)
-    rm -f /tmp/*.tmp /tmp/dm_fail /tmp/luci-indexcache* 2>/dev/null
+    rm -f /tmp/*.tmp /tmp/spd_*.out /tmp/dm_fail /tmp/luci-indexcache* 2>/dev/null
     sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
     FREE_MB=$(awk '/MemAvailable:/{printf "%.1f", $2/1024}' /proc/meminfo 2>/dev/null || echo "0")
     printf '{"ok":true,"free_mb":"%s"}\n' "$FREE_MB"
@@ -73,30 +91,30 @@ case "$act" in
     /etc/init.d/sqm reload >/dev/null 2>&1
     ok ;;
 
+  sqm_manual)
+    [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
+    DL_K=$(jsonfilter -s "$body" -e '@.dl')
+    UL_K=$(jsonfilter -s "$body" -e '@.ul')
+    [ -z "$DL_K" ] || [ "$DL_K" -lt 1000 ] && err "Mức tốc độ không hợp lệ"
+    [ -z "$UL_K" ] || [ "$UL_K" -lt 500 ] && UL_K=$((DL_K / 2))
+    AP5=$(apply_sqm_5g "$DL_K" "$UL_K")
+    printf '{"ok":true,"dl":%s,"ul":%s,"iface":"%s"}\n' "$DL_K" "$UL_K" "$AP5"
+    exit 0 ;;
+
   sqm_auto)
     [ -f /etc/config/sqm ] || err "Router chưa cài gói sqm-scripts"
-    command -v curl >/dev/null 2>&1 || err "Thiếu gói curl (chạy: apk add curl)"
-
+    command -v curl >/dev/null 2>&1 || err "Thiếu gói curl"
     WAS_EN=$(uci -q get sqm.@queue[0].enabled || echo 0)
     [ "$WAS_EN" = "1" ] && /etc/init.d/sqm stop >/dev/null 2>&1
 
     DL_K=$(measure_dl_kbps)
     if [ "$DL_K" -lt 1000 ]; then
       [ "$WAS_EN" = "1" ] && /etc/init.d/sqm start >/dev/null 2>&1
-      err "Không đo được tốc độ (kiểm tra kết nối Internet)"
+      err "Không đo được tốc độ mạng"
     fi
 
     UL_K=$((DL_K / 2))
-
-    AP5=$(get_5g_ap_dev)
-    uci set sqm.@queue[0].interface="$AP5"
-    uci set sqm.@queue[0].qdisc='fq_codel'
-    uci set sqm.@queue[0].script='simple.qos'
-    uci set sqm.@queue[0].upload="$DL_K"
-    uci set sqm.@queue[0].download="$UL_K"
-    uci set sqm.@queue[0].enabled="1"
-    uci commit sqm
-    /etc/init.d/sqm restart >/dev/null 2>&1
+    AP5=$(apply_sqm_5g "$DL_K" "$UL_K")
     sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null
     printf '{"ok":true,"dl":%s,"ul":%s,"iface":"%s"}\n' "$DL_K" "$UL_K" "$AP5"
     exit 0 ;;
