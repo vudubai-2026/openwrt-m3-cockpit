@@ -71,8 +71,6 @@ printf 'Content-Type: application/json\r\nCache-Control: no-store\r\n\r\n'
 if [ "$REQUEST_METHOD" != "POST" ]; then
   case "$QUERY_STRING" in
     *action=list*) list; exit 0;;
-    *action=net_status*) act=net_status; . /etc/devmgr/net_ext.sh;;
-    *action=wifi_scan*) act=wifi_scan; . /etc/devmgr/net_ext.sh;;
   esac
   err "bad request"
 fi
@@ -81,11 +79,13 @@ fi
 body=$(head -c "${CONTENT_LENGTH:-0}")
 act=$(jsonfilter -s "$body" -e '@.action')
 mac=$(jsonfilter -s "$body" -e '@.mac' | tr 'a-f' 'A-F')
-case "$act" in net_status|clean_ram|sqm_toggle|sqm_auto|wifi_scan|wifi_save|failover_toggle) . /etc/devmgr/net_ext.sh ;; esac
 echo "$mac" | grep -Eq '^([0-9A-F]{2}:){5}[0-9A-F]{2}$' || err "MAC khong hop le"
 nft list table inet devmgr >/dev/null 2>&1 || /etc/devmgr/init.sh
 
 case "$act" in
+  net_status|clean_ram|sqm_toggle|sqm_auto|wifi_scan|wifi_save|failover_toggle)
+    . /etc/devmgr/net_ext.sh
+    exit 0 ;;
   block)            setadd blocked blocked.list "$mac"; ok;;
   unblock)          setdel blocked blocked.list "$mac"; ok;;
   blacklist_add)    setadd blacklist blacklist.list "$mac"; kick "$mac"; ok;;
